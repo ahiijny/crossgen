@@ -6,7 +6,7 @@ def read(fname):
 
 setup(
 	name="crosschan",
-	version="0.1.0",
+	version="0.0.1",
 	description="derp crossword helper tool",
 	long_description=read('README.md'),
 	author="ahiijny",
@@ -18,7 +18,4 @@ setup(
 			"crosschan = crosschan.__main__:main",
 		],
 	},
-	install_requires = [
-		"require-python-3"
-	],
 )
