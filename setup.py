@@ -13,6 +13,9 @@ setup(
 	author_email="ahiijny@gmail.com",
 	license="MIT",
 	packages=find_packages(),
+	install_requires = [
+		'networkx'
+	],
 	entry_points = {
 		"console_scripts" : [
 			"crosschan = crosschan.__main__:main",

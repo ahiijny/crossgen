@@ -1,9 +1,9 @@
 import sys
 import argparse
 
-def main(args=None):
-	if args is None:
-		args = sys.argv[1:]
+from crosschan import command
+
+def main(args):
 	parser = argparse.ArgumentParser(prog="crosschan", description="derp crosswords")
 	parser.add_argument('path', metavar='path', type=str, nargs='?', default='-',
 	               help='location of file contain newline-separated list of words')
@@ -30,4 +30,4 @@ def main(args=None):
 	fin.close()
 
 if __name__ == "__main__":
-	main()
+	command.main(sys.argv)
