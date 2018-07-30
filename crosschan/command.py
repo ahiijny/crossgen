@@ -1,5 +1,6 @@
 import logging
 import argparse
+import sys
 
 def main(argv):
     parser = argparse.ArgumentParser(description="Crosswords",
@@ -13,15 +14,18 @@ def main(argv):
     logging.debug('Started')
 
     args = parser.parse_args(argv)
+    exit_code = 0
     if hasattr(args, "func"):
-        args.func(args)
+        exit_code = args.func(args)
     else:
         parser.print_help()
     
     logging.debug('Finished')
+    sys.exit(exit_code)
 
 command_names = [
-    "test"
+    "test",
+    "create"
 ]
 
 def _add_subparsers(subparsers):
@@ -42,3 +46,27 @@ def _test_parser(subparser):
 
 def test(args):
      print(args)
+
+def _create_parser(subparser):
+    subparser.add_argument("-i", "--from_file", metavar="PATH", default="-", help="file from which to read newline-separated words (use '-' to indicate stdin)")
+
+def create(args):
+    """Read in words from stdout, terminated with an empty newline, and then generate crosswords"""
+
+    words = []
+    infile = sys.stdin
+    inpath = args.from_file
+    if inpath != "-":
+        try:
+            infile = open(inpath, "r")
+        except IOError:
+            print(f"could not open file {infile}")
+            return 1
+
+    for word in infile:
+        word = word.strip()
+        if len(word) == 0:
+            break
+        words.append(word)
+
+    print(words)

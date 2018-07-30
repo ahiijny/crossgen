@@ -12,8 +12,6 @@ class Graph:
         """link the skip1th occurrence of letter in word 1(0-indexed)
         with the skip2th occurrence of letter in word 2"""
 
-
-    
 class Node:
     def __init__(self, value):
         self.value = value

@@ -3,7 +3,7 @@ import argparse
 
 from crosschan import command
 
-def main(args):
+def main(args): # TODO: don't need this anymore, remove it
 	parser = argparse.ArgumentParser(prog="crosschan", description="derp crosswords")
 	parser.add_argument('path', metavar='path', type=str, nargs='?', default='-',
 	               help='location of file contain newline-separated list of words')
