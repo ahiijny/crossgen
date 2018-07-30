@@ -2,7 +2,8 @@
 
 Used to check spatial constraints etc."""
 
-from enum import Enum
+HORIZONTAL = 0
+VERTICAL = 1
 
 class Grid:
     """Using screen coordinates"""
@@ -17,9 +18,9 @@ class Grid:
         """overwrite existing, if any"""
         dx = 0
         dy = 0 
-        if orientation is Orientation.HORIZONTAL:
+        if orientation is HORIZONTAL:
             dx = 1
-        elif orientation is Orientation.VERTICAL:
+        elif orientation is VERTICAL:
             dy = 1
 
         for ch in word:
@@ -51,14 +52,10 @@ class Grid:
             lines.append(''.join(line))
         return '\n'.join(lines)
 
-class Orientation(Enum):
-    HORIZONTAL = 0
-    VERTICAL = 1
-
 def main():
     grid = Grid()
-    grid.place("television", 0, 0, Orientation.HORIZONTAL)
-    grid.place("ship", 5, -2, Orientation.VERTICAL)
+    grid.place("television", 0, 0, HORIZONTAL)
+    grid.place("ship", 5, -2, VERTICAL)
     print(grid)
 
 if __name__ == "__main__":

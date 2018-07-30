@@ -53,6 +53,8 @@ def _create_parser(subparser):
 def create(args):
     """Read in words from stdout, terminated with an empty newline, and then generate crosswords"""
 
+    from crosschan import walker
+
     words = []
     infile = sys.stdin
     inpath = args.from_file
@@ -69,4 +71,5 @@ def create(args):
             break
         words.append(word)
 
-    print(words)
+    for crossword in walker.generate_crosswords(words):
+        print(crossword)
