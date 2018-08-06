@@ -14,6 +14,28 @@ class Grid:
     def hasChar(self, x, y):
         return (x, y) in self.index
 
+    def can_place(self, word, x, y, orientation):
+        """Boundary checks:
+
+        - all cells in path must be either empty or match word
+        - cannot touch any cells on side unless crossing a path
+        - cell past end must be empty
+        - cell before beginning must be empty
+        """
+        dx = 0
+        dy = 0 
+        if orientation is HORIZONTAL:
+            dx = 1
+        elif orientation is VERTICAL:
+            dy = 1
+
+        for ch in word:
+            if (x,y) in self.index and self.index[(x,y)] != ch: # mismatch on overlap
+                return False
+            x += dx
+            y += dy
+            
+
     def place(self, word, x, y, orientation):
         """overwrite existing, if any"""
         dx = 0
@@ -25,8 +47,8 @@ class Grid:
 
         for ch in word:
             self.index[(x,y)] = ch
-            x = x + dx
-            y = y + dy
+            x += dx
+            y += dy
 
     def recalc_bounds(self):
         self.xmin = 0

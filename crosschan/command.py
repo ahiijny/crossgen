@@ -45,7 +45,8 @@ def _test_parser(subparser):
     subparser.add_argument("--option", metavar="VALUE", default="123456", help="description")
 
 def test(args):
-     print(args)
+    """This doesn't do anything"""
+    print(args)
 
 def _create_parser(subparser):
     subparser.add_argument("-i", "--from_file", metavar="PATH", default="-", help="file from which to read newline-separated words (use '-' to indicate stdin)")
