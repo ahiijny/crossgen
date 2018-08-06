@@ -1,3 +1,3 @@
-### crosschan
+### crossgen
 
 Derp crossword helper tool.

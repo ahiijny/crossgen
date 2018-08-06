@@ -1,4 +1,4 @@
-from crosschan import grid
+from crossgen import grid
 
 def generate_crosswords(words):
     """words is a sequence of words"""

@@ -1,6 +1,6 @@
 import sys
 
-from crosschan import command
+from crossgen import command
 
 if __name__ == "__main__":
 	command.main(sys.argv)
