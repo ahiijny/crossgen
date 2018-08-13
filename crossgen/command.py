@@ -49,7 +49,7 @@ def test(args):
     print(args)
 
 def _create_parser(subparser):
-    subparser.add_argument("-i", "--from_file", metavar="PATH", default="-", help="file from which to read newline-separated words (use '-' to indicate stdin)")
+    subparser.add_argument("-i", "--from-file", metavar="PATH", default="-", help="file from which to read newline-separated words (use '-' to indicate stdin)")
 
 def create(args):
     """Read in words from stdout, terminated with an empty newline, and then generate crosswords"""
