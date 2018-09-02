@@ -2,75 +2,87 @@ import logging
 import argparse
 import sys
 
-def main(argv):
-    parser = argparse.ArgumentParser(description="Crosswords",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+class main:
+    command_names = [
+        "test",
+        "create",
+    ]
 
-    parser.add_argument("command", help="subcommand to run")
-    subparsers = parser.add_subparsers(metavar="", dest="command")
-    _add_subparsers(subparsers)
+    def run(self, argv):
+        parser = argparse.ArgumentParser(description="Crosswords",
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    logging.basicConfig(level=logging.INFO)
-    logging.debug('Started')
+        parser.add_argument("command", help="subcommand to run")
+        subparsers = parser.add_subparsers(metavar="", dest="command")
+        self.add_subparsers(subparsers)
 
-    args = parser.parse_args(argv)
-    exit_code = 0
-    if hasattr(args, "func"):
-        exit_code = args.func(args)
-    else:
-        parser.print_help()
-    
-    logging.debug('Finished')
-    sys.exit(exit_code)
+        logging.basicConfig(level=logging.INFO)
+        logging.debug('Started')
 
-command_names = [
-    "test",
-    "create"
-]
+        args = parser.parse_args(argv)
+        exit_code = 0
+        if hasattr(args, "func"):
+            exit_code = args.func(args)
+        else:
+            parser.print_help()
+        
+        logging.debug('Finished')
+        sys.exit(exit_code)
 
-def _add_subparsers(subparsers):
-    """Add a subparser for each command in command_names.
+    def add_subparsers(self, subparsers):
+        """Add a subparser for each command in command_names.
 
-    Assumes that the parser function is `def _{command_name}_parser(subparsers):`"""
+        Assumes that the command objects follow the given interface:
+        
+        class cmd:
+            + build_parser(self, subparser):
+                adds the appropriate command line options to the given argparser
+            + run(self, args): exit_code
+                runs the command, given the argparse.Namespace args object
+                can return exit code or not return anything at all (which is the same as returning 0)
+        """
+        for command_name in main.command_names:
+            command = globals()[command_name]
+            description = command.run.__doc__
+            help = description.split("\n", 1)[0]
+            subparser = subparsers.add_parser(command_name, description=description, help=help)
+            subparser.set_defaults(func=command.run)
+            command().build_parser(subparser)
 
-    for command_name in command_names:
-        command = globals()[command_name]
-        subparser = subparsers.add_parser(command_name, help=command.__doc__)
-        subparser.set_defaults(func=command)
-        build_parser = globals().get("_" + command_name + "_parser", None)
-        assert build_parser is not None
-        build_parser(subparser)
+class test:
+    def build_parser(self, subparser):
+        subparser.add_argument("--option", metavar="VALUE", default="123456", help="description")
 
-def _test_parser(subparser):
-    subparser.add_argument("--option", metavar="VALUE", default="123456", help="description")
+    def run(self, args):
+        """This doesn't do anything"""
+        print(args)
 
-def test(args):
-    """This doesn't do anything"""
-    print(args)
+class create:
+    def build_parser(self, subparser):
+        subparser.add_argument("-i", "--from-file", metavar="PATH", default="-", help="file from which to read newline-separated words (use '-' to indicate stdin)")
 
-def _create_parser(subparser):
-    subparser.add_argument("-i", "--from-file", metavar="PATH", default="-", help="file from which to read newline-separated words (use '-' to indicate stdin)")
+    def run(self, args):
+        """Read in words from stdout, terminated with an empty newline, and then generate crosswords.
+        
+        Output is in plain text format."""
 
-def create(args):
-    """Read in words from stdout, terminated with an empty newline, and then generate crosswords"""
+        from crossgen import walker
 
-    from crossgen import walker
+        words = []
+        infile = sys.stdin
+        inpath = args.from_file
+        if inpath != "-":
+            try:
+                infile = open(inpath, "r")
+            except IOError:
+                print(f"could not open file {infile}")
+                return 1
 
-    words = []
-    infile = sys.stdin
-    inpath = args.from_file
-    if inpath != "-":
-        try:
-            infile = open(inpath, "r")
-        except IOError:
-            print(f"could not open file {infile}")
-            return 1
+        for word in infile:
+            word = word.strip()
+            if len(word) == 0:
+                break
+            words.append(word)
 
-    for word in infile:
-        word = word.strip()
-        if len(word) == 0:
-            break
-        words.append(word)
-
-    for crossword in walker.generate_crosswords(words):
-        print(crossword)
+        for crossword in walker.generate_crosswords(words):
+            print(crossword)
