@@ -85,8 +85,11 @@ class create:
                 break
             words.append(word)
 
-        for crossword in walker.generate_crosswords(words):
-            print(crossword)
+        try:
+            for crossword in walker.generate_crosswords(words):
+                print(crossword)
+        except KeyboardInterrupt: # graceful Ctrl + C
+            return 0
 
 class create_derp:
     def build_parser(self, subparser):

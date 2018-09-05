@@ -20,6 +20,10 @@ def sub(v1, v2):
     """Subtract two tuples elementwise"""
     return tuple(a - b for a, b in zip(v1, v2))
 
+def scale(v, s):
+    """Multiply tuple elementwise by scalar"""
+    return tuple(a * s for a in v)
+
 def normal(v1):
     """Return a tuple containing the two perpendicular unit vectors
     
@@ -34,6 +38,14 @@ def normal(v1):
         return (WEST, EAST)
     else:
         raise ValueError(f"Unsupported input: {v1}")
+
+def flip_orientation(orientation):
+    if orientation == EAST:
+        return SOUTH
+    elif orientation == SOUTH:
+        return EAST
+    else:
+        raise ValueError(f"unsupported orientation {orientation}")
 
 class Grid:
     """Grid of words, using screen coordinates"""
@@ -80,6 +92,25 @@ class Grid:
             self.counts[pos] -= 1
             if self.counts[pos] == 0:
                 del self.index[pos]
+
+    def can_join_word(self, parent_word, parent_index, child_word, child_index):
+        """Return true if can join child_word at letter child_index to existing parent_word at parent_index"""
+        if parent_word not in self.words:
+            return False
+        parent_coords = self.words[parent_word]["coords"]
+        parent_orientation = self.words[parent_word]["orientation"]
+        child_orientation = flip_orientation(parent_orientation)
+        join_coords = add(parent_coords, scale(parent_orientation, parent_index))
+        child_coords = sub(join_coords, scale(child_orientation, child_index))
+        return self.can_add_word(child_word, child_coords[0], child_coords[1], child_orientation)
+
+    def join_word(self, parent_word, parent_index, child_word, child_index):
+        parent_coords = self.words[parent_word]["coords"]
+        parent_orientation = self.words[parent_word]["orientation"]
+        child_orientation = flip_orientation(parent_orientation)
+        join_coords = add(parent_coords, scale(parent_orientation, parent_index))
+        child_coords = sub(join_coords, scale(child_orientation, child_index))
+        self.add_word(child_word, child_coords[0], child_coords[1], child_orientation)
 
     def can_add_word(self, word, x, y, direction):
         """Boundary checks:
