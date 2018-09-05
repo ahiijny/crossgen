@@ -61,6 +61,7 @@ class test:
 class create:
     def build_parser(self, subparser):
         subparser.add_argument("-i", "--from-file", metavar="PATH", default="-", help="file from which to read newline-separated words (use '-' to indicate stdin)")
+        subparser.add_argument("-d", "--debug", action="store_true", help="print debug stuff")
 
     def run(self, args):
         """Read in words from stdout, terminated with an empty newline, and then generate crosswords.
@@ -78,6 +79,10 @@ class create:
             except IOError:
                 print(f"could not open file {infile}")
                 return 1
+                
+        if args.debug:
+            import logging
+            logging.basicConfig(level=logging.info)
 
         for word in infile:
             word = word.strip()
