@@ -4,6 +4,7 @@ This is using screen coordinates (i.e. y values increase downwards)
 
 Used to check spatial constraints etc."""
 
+import logging
 import sys
 import operator
 
@@ -97,7 +98,7 @@ class Grid: # for now, assume no duplicate words
     def can_join_word(self, parent_word, parent_index, child_word, child_index):
         """Return true if can join child_word at letter child_index to existing parent_word at parent_index"""
         if parent_word not in self.words:
-            print(f"  {parent_word} not in self.words", file=sys.stderr)
+            logging.debug(f"  {parent_word} not in self.words")
             return False
         parent_coords = self.words[parent_word]["coords"]
         parent_orientation = self.words[parent_word]["orientation"]
@@ -211,7 +212,14 @@ class Grid: # for now, assume no duplicate words
             self.xmin = min(self.xmin, coords[0])
             self.xmax = max(self.xmax, coords[0])
             self.ymin = min(self.ymin, coords[1])
-            self.ymax = max(self.ymax, coords[1]) 
+            self.ymax = max(self.ymax, coords[1])
+
+    def __hash__(self):
+        repr_str = "".join(str(attr["coords"]) + str(attr["orientation"]) for word, attr in self.words.items())
+        return hash(repr_str)
+
+    def __eq__(self, other):
+        return self.index == other.index and self.words == other.words and self.counts == other.counts
 
 def main():
     grid = Grid()
