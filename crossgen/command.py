@@ -6,6 +6,7 @@ class main:
     command_names = [
         "test",
         "create",
+        "create-derp",
     ]
 
     def run(self, argv):
@@ -42,12 +43,12 @@ class main:
                 can return exit code or not return anything at all (which is the same as returning 0)
         """
         for command_name in main.command_names:
-            command = globals()[command_name]
+            command = globals()[command_name.replace("-", "_")]()
             description = command.run.__doc__
             help = description.split("\n", 1)[0]
             subparser = subparsers.add_parser(command_name, description=description, help=help)
             subparser.set_defaults(func=command.run)
-            command().build_parser(subparser)
+            command.build_parser(subparser)
 
 class test:
     def build_parser(self, subparser):
@@ -85,4 +86,15 @@ class create:
             words.append(word)
 
         for crossword in walker.generate_crosswords(words):
+            print(crossword)
+
+class create_derp:
+    def build_parser(self, subparser):
+        pass
+
+    def run(self, args):
+        """Derp"""
+        from crossgen import walker
+
+        for crossword in walker.generate_crosswords_derp():
             print(crossword)

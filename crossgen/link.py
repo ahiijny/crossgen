@@ -4,6 +4,9 @@ Defines which words are linked to which words."""
 
 import networkx as nx
 
+WORD = 0
+LETTER = 1
+
 def generate_link_graph(words):
     """Given a list of words, return the link graph for the list of words.
 
@@ -19,9 +22,9 @@ def generate_link_graph(words):
     G = nx.MultiGraph()
     
     for word in words:
-        G.add_node(word, bipartite=0)
+        G.add_node(word, bipartite=WORD)
         for i, letter in enumerate(word):
-            G.add_node(letter, bipartite=1)
+            G.add_node(letter, bipartite=LETTER)
             G.add_edge(word, letter, index=i)
 
     return G
