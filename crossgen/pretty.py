@@ -52,7 +52,6 @@ def print_html_grid(out, grid):
     print("</body>", file=out)
     print("</html>", file=out)
 
-
 def test_html():
     g = grid.Grid()
     g.add_word("REIMU", 0, 0, grid.EAST)
