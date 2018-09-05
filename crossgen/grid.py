@@ -4,6 +4,7 @@ This is using screen coordinates (i.e. y values increase downwards)
 
 Used to check spatial constraints etc."""
 
+import sys
 import operator
 
 EAST = (1, 0)
@@ -47,7 +48,7 @@ def flip_orientation(orientation):
     else:
         raise ValueError(f"unsupported orientation {orientation}")
 
-class Grid:
+class Grid: # for now, assume no duplicate words
     """Grid of words, using screen coordinates"""
     def __init__(self):
         self.index = {}
@@ -57,7 +58,7 @@ class Grid:
         """sparse matrix such that counts[(x,y)] = number of occurrences at (x,y)"""
 
         self.words = {}
-        """map from (word, key=0) to {"coords" : (x, y), "orientation" : <int>} object"""
+        """map from word to {"coords" : (x, y), "orientation" : <int>} object"""
 
     def copy(self):
         new_grid = Grid()
@@ -96,6 +97,7 @@ class Grid:
     def can_join_word(self, parent_word, parent_index, child_word, child_index):
         """Return true if can join child_word at letter child_index to existing parent_word at parent_index"""
         if parent_word not in self.words:
+            print(f"  {parent_word} not in self.words", file=sys.stderr)
             return False
         parent_coords = self.words[parent_word]["coords"]
         parent_orientation = self.words[parent_word]["orientation"]
@@ -127,12 +129,12 @@ class Grid:
         for i, ch in enumerate(word):
             # cell before beginning must be empty
             if i == 0:
-                if self.has_letter_at(sub(pos, dir)):
+                if self.has_letter_at(sub(pos, direction)):
                     return False
 
             # cell past end must be empty
             if i == len(word) - 1:
-                if self.has_letter_at(add(pos, dir)):
+                if self.has_letter_at(add(pos, direction)):
                     return False
 
             # all cells in path must be either empty or match word
@@ -151,10 +153,10 @@ class Grid:
             pos = add(pos, direction)
         return True
         
-    def add_word(self, word, x, y, direction, key=0):
-        if (word, key) in self.words:
-            raise ValueError(f"word '{word}' with key={key}' is already in grid'")
-        self.words[(word, key)] = {"coords" : (x, y), "orientation" : direction}
+    def add_word(self, word, x, y, direction):
+        if word in self.words:
+            raise ValueError(f"word '{word}' is already in grid'")
+        self.words[word] = {"coords" : (x, y), "orientation" : direction}
 
         pos = (x, y)
 
