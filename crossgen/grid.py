@@ -177,17 +177,20 @@ class Grid: # for now, assume no duplicate words
         return (self.xmax - self.xmin, self.ymax - self.ymin)
 
     def get_grid_numbers(self):
-        """Return a map from (grid_x, grid_y) to number, relative to printed grid"""
+        """Return a map from (grid_x, grid_y) to number (1-indexed), relative to printed grid"""
         self._recalc_bounds()
         word_starts = []
         for data in self.words.values():
             (x, y) = data["coords"]
             grid_coords = (x - self.xmin, y - self.ymin)
             word_starts.append(grid_coords)
-        sorted(word_starts)
+        word_starts = sorted(word_starts, key=lambda x: (x[1], x[0]))
         word_numbers = {}
-        for i, grid_coords in enumerate(word_starts):
-            word_numbers[grid_coords] = i
+        outcount = 0
+        for grid_coords in word_starts:
+            if grid_coords not in word_numbers:
+                word_numbers[grid_coords] = outcount + 1
+                outcount += 1
         return word_numbers
 
     def __str__(self):

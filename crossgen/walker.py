@@ -6,22 +6,16 @@ import sys
 from crossgen import link
 from crossgen import grid
 
-def generate_crosswords(words):
+def generate_crosswords(words, max=None):
     """words is a sequence of words"""
 
-    base = link.generate_link_graph(words)
-    tree = nx.Graph()
-    tree.add_node(base)
-    unused_words = list(words)
-
-    stack = [(base, unused_words)]
-
-    while len(stack) > 0:
-        graph, unused_words = stack.pop()
-        graph = tree.copy()
-        if len(unused_words) == 0:
-            continue
-        next = unused_words[0]
+    outcount = 0
+    searcher = CrosswordTreeSearch(words)
+    for crossword in searcher.search():
+        yield crossword
+        outcount += 1
+        if outcount == max:
+            break
 
 def generate_crosswords_derp():
     """words is a sequence of words"""
@@ -89,7 +83,11 @@ class CrosswordTreeSearch:
         sequence = " -> ".join(reversed(labels))
         logging.debug(sequence)
 
-    def walk_test(self):
+    def search(self):
+        """Yields valid grid.Grids that it finds
+
+        This is a brute-force search, so runtime is probably exponential wrt number of words.
+        """
         while len(self.stack) > 0:
             (this_grid, this_link, mode) = self.stack.pop()
             self.print_pv(this_grid, this_link, mode)
@@ -106,7 +104,9 @@ class CrosswordTreeSearch:
                         self.read_letter_to_word(this_grid, this_link, edge)
             elif mode == link.WORD: # need to add a letter
                 if len(used_words) == len(self.all_words):
+                    assert(len(this_grid.words) == len(self.all_words))
                     logging.debug(f"FINISHED GRID: \n{str(this_grid)}")
+                    yield this_grid
                     continue
                 next_from_words = self.next_from_words(this_grid, this_link, used_words, used_letters)
                 for edge in next_from_words:
@@ -217,7 +217,7 @@ def walk_test():
     g = link.generate_link_graph(words)
     
     search_tree = CrosswordTreeSearch(words)
-    search_tree.walk_test()
+    search_tree.search()
 
 if __name__ == "__main__":
     walk_test()

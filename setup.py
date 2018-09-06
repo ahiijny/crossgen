@@ -6,7 +6,7 @@ def read(fname):
 
 setup(
 	name="crossgen",
-	version="0.0.1",
+	version="0.0.2",
 	description="derp crossword helper tool",
 	long_description=read('README.md'),
 	author="ahiijny",
