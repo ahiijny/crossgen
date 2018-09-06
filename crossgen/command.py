@@ -46,7 +46,8 @@ class main:
             command = globals()[command_name.replace("-", "_")]()
             description = command.run.__doc__
             help = description.split("\n", 1)[0]
-            subparser = subparsers.add_parser(command_name, description=description, help=help)
+            subparser = subparsers.add_parser(command_name, description=description, help=help,
+                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
             subparser.set_defaults(func=command.run)
             command.build_parser(subparser)
 
