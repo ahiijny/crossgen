@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
 from .crossgen_qt import CrossgenQt
 
-def run():
+def main():
 	app = QApplication([])
 	app.setStyle('Fusion')
 	window = CrossgenQt(app)
@@ -12,4 +12,4 @@ def run():
 	return exit_code
 
 if __name__ == "__main__":
-	sys.exit(run())
+	sys.exit(main())

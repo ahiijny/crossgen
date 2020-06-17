@@ -6,7 +6,7 @@ def read(fname):
 
 setup(
 	name="crossgen",
-	version="0.0.2",
+	version="0.0.3dev",
 	description="crossword generation tool",
 	long_description=read('README.md'),
 	author="ahiijny",
@@ -20,10 +20,10 @@ setup(
 	],
 	entry_points = {
 		"gui_scripts" : [
-			"crossgen = crossgen.__main__:gui"
+			"crossgen = crossgen.gui.__main__:main"
 		],
 		"console_scripts" : [
-			"crossgenc = crossgen.__main__:console",
+			"crossgenc = crossgen.__main__:main",
 		]
 	},
 )
