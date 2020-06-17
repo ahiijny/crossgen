@@ -17,13 +17,14 @@ setup(
 	install_requires = [
 		'networkx',
 		'PyQt5',
+		'PyQtWebEngine'
 	],
 	entry_points = {
-		"gui_scripts" : [
-			"crossgen = crossgen.gui.__main__:main"
-		],
 		"console_scripts" : [
 			"crossgenc = crossgen.__main__:main",
-		]
+		],
+		"gui_scripts" : [
+			"crossgen = crossgen.gui.__main__:main"
+		]		
 	},
 )

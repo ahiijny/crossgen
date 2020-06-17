@@ -2,11 +2,13 @@ from PyQt5.QtCore import (
 	QSize,
 )
 from PyQt5.QtWidgets import (
+	QFrame,
 	QMainWindow,
 	QApplication,
 	QWidget,
 	QPushButton,
 	QBoxLayout,
+	QVBoxLayout,
 	QTextEdit,
 	QPlainTextEdit,
 	QLabel,
@@ -14,7 +16,12 @@ from PyQt5.QtWidgets import (
 	QMenuBar,
 	QAction,
 	QMessageBox,
+	QFileDialog,
+	QSizePolicy
 )
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+
+import crossgen.pretty as pretty
 
 class CrossgenQt(QMainWindow):
 	def __init__(self, app):
@@ -54,8 +61,9 @@ class CrossgenQt(QMainWindow):
 
 		# Post-setup
 
-		self.on_text_changed() # populate status bar with initial status
 		self._refresh_window_title()
+		self.on_text_changed() # populate status bar with initial status
+		self.on_output_changed()
 
 	def _refresh_window_title(self):
 		title = "Crossgen "
@@ -118,9 +126,18 @@ class CrossgenQt(QMainWindow):
 		output_label.setStyleSheet("""font-size: 10pt""")
 		output_layout.addWidget(output_label)
 
-		self.output_view = QTextEdit()
-		self.output_view.setReadOnly(True)
-		output_layout.addWidget(self.output_view)
+		#self.output_view = QTextEdit()
+		self.output_view = QWebEngineView()
+		self.output_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+		#self.output_view.setReadOnly(True)
+		web_frame = QFrame()
+		web_frame.setStyleSheet("""border:1px solid #B9B9B9""") # hack to back output pane have some border colour as input pane
+		web_frame_layout = QVBoxLayout()
+		web_frame_layout.setSpacing(0)
+		web_frame_layout.setContentsMargins(0, 0, 0, 0)
+		web_frame.setLayout(web_frame_layout)
+		web_frame_layout.addWidget(self.output_view)
+		output_layout.addWidget(web_frame)
 
 		self.output_label = QLabel("")
 		output_layout.addWidget(self.output_label)
@@ -145,11 +162,90 @@ class CrossgenQt(QMainWindow):
 			self.statusBar().showMessage("Enter some words!")
 			self.btn_generate.setEnabled(False)
 
-		if (len(self.text_input.document().toPlainText()) > 0
-				or len(self.output_view.document().toPlainText()) > 0):
+		if (len(self.text_input.document().toPlainText()) > 0):
 			self.set_dirty(True)
 		else:
 			self.set_dirty(False)
+
+	def on_output_changed(self):
+		# TODO: actually generate the output
+
+		self.output_view.setHtml("""
+<!DOCTYPE html>
+<head>
+<style>
+	{style}
+</style>
+</head>
+<body>
+<h2>Testing Testing</h2>
+<table>
+  <tr>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td><sup>5</sup>M</td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+  </tr>
+  <tr>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td><sup>8</sup>M</td>
+    <td>O</td>
+    <td>N</td>
+    <td>T</td>
+    <td>A</td>
+    <td>N</td>
+    <td>A</td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+  </tr>
+  <tr>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td>R</td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+  </tr>
+</table>
+</body>
+</html>""".format(style=pretty.style))
 
 	def set_dirty(self, is_dirty):
 		"""Dirty = if the file has been changed since it was last saved"""
@@ -161,13 +257,33 @@ class CrossgenQt(QMainWindow):
 			self.save_as()
 			return
 
-		self.set_dirty(False)
+		def on_htmlled(html):
+			print(html) # TODO actually save the file
+
+			self.statusBar().showMessage(f"Saved to {self.save_path}")
+			self.set_dirty(False)
+
+		self.output_view.page().toHtml(on_htmlled)
 
 	def save_as(self):
-		self.set_dirty(False)
+		dialog = QFileDialog(self, caption="Save Crosswords", directory="./crosswords.html", filter="HTML files (*.html)")
+		dialog.setDefaultSuffix(".html")
+		dialog.setFileMode(QFileDialog.AnyFile) # including files that don't exist
+		dialog.setAcceptMode(QFileDialog.AcceptSave)
+
+		result = dialog.exec_()
+		if not result: # user rejected the save
+			return
+
+		file_names = dialog.selectedFiles()
+			# output looks something like ("C:/Users/Person/Documents/crosswords.html", 'HTML files (*.html)')
+		if len(file_names) == 0:
+			return
+		self.save_path = file_names[0]
+		self.save()
 
 	def closeEvent(self, event):
-		"""Override"""
+		"""@Override"""
 		if self.can_exit():
 			event.accept()
 		else:

@@ -5,9 +5,31 @@ import sys
 
 from crossgen import grid
 
+style = """
+    table, th, td {
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+    td {
+        border: 1px solid black;
+        width: 1.3em;
+        height: 1.3em;
+        text-align: center;
+    }
+    td.empty {
+        border: 0;
+    }
+    body {
+        font-family: Sans-Serif;
+    }
+"""
+
 class HtmlGridPrinter:
+    
     def __init__(self, outstream=sys.stdout):
         self.out = outstream
+        global style
+        self.style = style
 
     def print_header(self):
         out = self.out
@@ -16,24 +38,7 @@ class HtmlGridPrinter:
         print("<html>", file=out)
         print("<head>", file=out)
         print("<style>", file=out)
-        print("""
-        table, th, td {
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-        td {
-            border: 1px solid black;
-            width: 1.3em;
-            height: 1.3em;
-            text-align: center;
-        }
-        td.empty {
-            border: 0;
-        }
-        body {
-            font-family: Sans-Serif;
-        }
-        """, file=out)
+        print(self.style, file=out)
         print("</style>", file=out)
         print("</head>", file=out)
         print("<body>", file=out)

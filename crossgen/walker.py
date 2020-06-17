@@ -17,7 +17,7 @@ def generate_crosswords(words, max=None):
         if outcount == max:
             break
 
-def generate_crosswords_derp():
+def generate_crosswords_example():
     """words is a sequence of words"""
 
     crosswords = []
