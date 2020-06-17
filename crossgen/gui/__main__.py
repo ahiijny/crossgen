@@ -1,3 +1,5 @@
+import sys
+
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
 from .crossgen_qt import CrossgenQt
 
@@ -10,4 +12,4 @@ def run():
 	return exit_code
 
 if __name__ == "__main__":
-	run()
+	sys.exit(run())

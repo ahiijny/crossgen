@@ -4,6 +4,7 @@ build/
 __pycache__/
 .vscode
 .cache
+.env
 *.html
 *.txt
 *.dot
