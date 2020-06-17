@@ -1,21 +1,36 @@
-### crossgen
+# crossgen
 
-Generates crosswords using Python 3.
+Uses Python 3 to generate crosswords.
 
-There's a GUI version using PyQt5, and also a command line version.
+Includes a GUI implemented with PyQt5, and also a command line version.
 
-To install:
+If you just want to try it out without actually pip installing this package, you can manually
+pip install the dependencies listed in setup.py, and then directly run one of the following commands:
 
-    python -m pip install git+https://github.com/ahiijny/crossgen.git
+- For the command line tool:
 
-Or if you already have the repo cloned:
+  `python -m crossgen`
 
-	python -m pip install .
+- For the GUI:
 
-To run the GUI:
+  `python -m crossgen.gui`
 
-	crossgen
+To actually install this package (which also automatically installs the dependencies):
 
-To run the command line tool:
+- From GitHub:
 
-	crossgenc
+  `python -m pip install git+https://github.com/ahiijny/crossgen.git`
+
+- Or, if you have the repo already cloned:
+
+  `python -m pip install .`
+
+After installing, you should also be able to run the following scripts from your PATH:
+
+- For the command line tool:
+  
+  `crossgenc`
+
+- For the GUI:
+
+  `crossgen`
