@@ -4,7 +4,7 @@ from .crossgen_qt import CrossgenQt
 def run():
 	app = QApplication([])
 	app.setStyle('Fusion')
-	window = CrossgenQt()
+	window = CrossgenQt(app)
 	window.show()
 	exit_code = app.exec_()
 	return exit_code

@@ -16,7 +16,7 @@ setup(
 	python_requires="3",
 	install_requires = [
 		'networkx',
-		'pyqt5'
+		'PyQt5',
 	],
 	entry_points = {
 		"gui_scripts" : [
