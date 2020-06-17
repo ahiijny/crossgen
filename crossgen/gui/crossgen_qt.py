@@ -13,20 +13,31 @@ from PyQt5.QtWidgets import (
 	QDesktopWidget,
 	QMenuBar,
 	QAction,
+	QMessageBox,
 )
 
 class CrossgenQt(QMainWindow):
 	def __init__(self, app):
+		# Setup
+
 		QMainWindow.__init__(self)
 		self.app = app
-		self.setWindowTitle("Crossgen")
 		dim = app.primaryScreen().availableGeometry()
 		self.sizeHint = lambda : QSize(dim.width(), dim.height())
-		self.statusBar().showMessage("Ready")
+
+		# Properties
+
+		self.save_path = ""
+		self.is_dirty = False
+
+		# Build UI
 
 		self._build_main_menu()
 
 		self.layout = QBoxLayout(QBoxLayout.LeftToRight)
+		margins = self.layout.contentsMargins()
+		margins.setBottom(2)
+		self.layout.setContentsMargins(margins)
 		self.pane = QWidget()
 		self.pane.setLayout(self.layout)
 
@@ -41,20 +52,48 @@ class CrossgenQt(QMainWindow):
 		
 		self.setCentralWidget(self.pane)
 
+		# Post-setup
+
+		self.on_text_changed() # populate status bar with initial status
+		self._refresh_window_title()
+
+	def _refresh_window_title(self):
+		title = "Crossgen "
+		if self.save_path != "":
+			title += " - " + self.save_path + " "
+		if self.is_dirty:
+			title += "(*)"
+		self.setWindowTitle(title)
+
 	def _build_main_menu(self):
 		menubar = self.menuBar()
 		fileMenu = menubar.addMenu('&File')
 
-		act_exit = QAction('&Exit', self) # http://zetcode.com/gui/pyqt5/menustoolbars/
+		act_save = QAction('&Save', self) # http://zetcode.com/gui/pyqt5/menustoolbars/
+		act_save.setShortcut('Ctrl+S')
+		act_save.setStatusTip('Save the generated crosswords')
+		act_save.triggered.connect(self.save)
+		fileMenu.addAction(act_save)
+
+		act_save_as = QAction('&Save As...', self)
+		act_save_as.setStatusTip('Save a copy of the generated crosswords')
+		act_save_as.triggered.connect(self.save_as)
+		fileMenu.addAction(act_save_as)
+
+		act_exit = QAction('&Exit', self)
 		act_exit.setShortcut('Alt+F4')
 		act_exit.setStatusTip('Exit application')
-		act_exit.triggered.connect(self.app.quit)
+		act_exit.triggered.connect(self.close)
 		fileMenu.addAction(act_exit)
 
 	def _build_input_pane(self):
 		input_layout = QBoxLayout(QBoxLayout.TopToBottom)
 		input_pane = QWidget()
 		input_pane.setLayout(input_layout)
+
+		input_label = QLabel("Input (list of words, separated by newlines):")
+		input_label.setStyleSheet("""font-size: 10pt""")
+		input_layout.addWidget(input_label)
 
 		self.text_input = QPlainTextEdit()
 		doc = self.text_input.document()
@@ -75,7 +114,11 @@ class CrossgenQt(QMainWindow):
 		output_layout = QBoxLayout(QBoxLayout.TopToBottom)
 		output_pane.setLayout(output_layout)
 
-		self.output_view = QTextEdit("<b>Hello</b> <i>Qt!</i>")
+		output_label = QLabel("Output:")
+		output_label.setStyleSheet("""font-size: 10pt""")
+		output_layout.addWidget(output_label)
+
+		self.output_view = QTextEdit()
 		self.output_view.setReadOnly(True)
 		output_layout.addWidget(self.output_view)
 
@@ -95,3 +138,49 @@ class CrossgenQt(QMainWindow):
 			label_text += "words"
 		self.word_count_label.setText(label_text)
 
+		if word_count > 0:
+			self.statusBar().showMessage("Ready")
+			self.btn_generate.setEnabled(True)
+		else:
+			self.statusBar().showMessage("Enter some words!")
+			self.btn_generate.setEnabled(False)
+
+		if (len(self.text_input.document().toPlainText()) > 0
+				or len(self.output_view.document().toPlainText()) > 0):
+			self.set_dirty(True)
+		else:
+			self.set_dirty(False)
+
+	def set_dirty(self, is_dirty):
+		"""Dirty = if the file has been changed since it was last saved"""
+		self.is_dirty = is_dirty
+		self._refresh_window_title()			
+
+	def save(self):
+		if self.save_path == "":
+			self.save_as()
+			return
+
+		self.set_dirty(False)
+
+	def save_as(self):
+		self.set_dirty(False)
+
+	def closeEvent(self, event):
+		"""Override"""
+		if self.can_exit():
+			event.accept()
+		else:
+			event.ignore()
+
+	def can_exit(self):
+		if self.is_dirty:
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Warning)
+			msg.setWindowTitle("Exit Application")
+			msg.setText("Are you sure you want to exit?")			
+			msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+			retval = msg.exec_()
+			if retval == QMessageBox.No:
+				return False
+		return True
