@@ -1,3 +1,3 @@
 ### crossgen
 
-Derp crossword helper tool.
+Generates crosswords.

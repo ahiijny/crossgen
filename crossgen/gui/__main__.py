@@ -1,0 +1,13 @@
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
+from .crossgen_qt import CrossgenQt
+
+def run():
+	app = QApplication([])
+	app.setStyle('Fusion')
+	window = CrossgenQt()
+	window.show()
+	exit_code = app.exec_()
+	return exit_code
+
+if __name__ == "__main__":
+	run()

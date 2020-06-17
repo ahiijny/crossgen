@@ -41,7 +41,7 @@ class CrosswordTreeSearch:
 
     Attributes:
         all_words = list of words in the crossword
-        master_link_graph =  link graph containing all possible edges and nodes (see also link.generate_link_graph
+        master_link_graph =  link graph containing all possible edges and nodes (see also link.generate_link_graph)
         search_tree = the search tree
             node = (this_grid, this_link, mode)
                 mode = LETTER if word needs to be added next, or WORD if letter needs to be added next

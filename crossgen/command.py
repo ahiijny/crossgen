@@ -6,7 +6,6 @@ class main:
     command_names = [
         "test",
         "create",
-        "create-derp",
     ]
 
     def run(self, argv):
@@ -163,16 +162,3 @@ class create:
             pretty_printer.print_crossword(crossword, title_string=f"Crossword {i+1}, score:{score}")
 
         pretty_printer.print_footer()
-
-
-
-class create_derp:
-    def build_parser(self, subparser):
-        pass
-
-    def run(self, args):
-        """Derp"""
-        from crossgen import walker
-
-        for crossword in walker.generate_crosswords_derp():
-            print(crossword)

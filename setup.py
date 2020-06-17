@@ -7,18 +7,23 @@ def read(fname):
 setup(
 	name="crossgen",
 	version="0.0.2",
-	description="derp crossword helper tool",
+	description="crossword generation tool",
 	long_description=read('README.md'),
 	author="ahiijny",
 	author_email="ahiijny@gmail.com",
 	license="MIT",
 	packages=find_packages(),
+	python_requires="3",
 	install_requires = [
-		'networkx'
+		'networkx',
+		'pyqt5'
 	],
 	entry_points = {
+		"gui_scripts" : [
+			"crossgen = crossgen.__main__:gui"
+		]
 		"console_scripts" : [
-			"crossgen = crossgen.__main__:main",
-		],
+			"crossgenc = crossgen.__main__:console",
+		]
 	},
 )

@@ -78,7 +78,7 @@ def be_judgmental(crossword_grid):
     score_intersections = cross_count # more intersections is better
     score_too_tall = min(-(height / width) + 1, 0) # penalize crosswords that are too tall
     score_too_wide = min(-(width / height) + 1, 0) # penalize crosswords that are too wide
-    score_too_big = -(width * height ) # penalize crosswords that are too large
+    score_too_big = -(width * height) # penalize crosswords that are too large
     score_more_horizontals = 0
     for attrs in crossword_grid.words.values():
         if attrs["orientation"] == grid.EAST:
