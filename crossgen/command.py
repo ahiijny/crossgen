@@ -7,8 +7,10 @@ from crossgen import pretty
 
 # Helper functions
 
-def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=None):
+def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=None, capitalize=True, remove_spaces=True):
     """progress_callback should be of the form `lambda num_crosswords : int`
+    capitalize = uppercase everything
+    remove_spaces = remove spaces from within words
 
     Returns a list of the form (score, crossword_grid).
     """
@@ -22,6 +24,14 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
 
     if batch > max:
         batch = max
+
+    # input cleaning
+
+    for i in range(len(words)):
+        if capitalize:
+            words[i] = words[i].upper()
+        if remove_spaces:
+            words[i] = words[i].replace(" ", "")
 
     # create
 
@@ -164,16 +174,14 @@ class create:
 
         for word in infile:
             word = word.strip()
-            if not args.no_preprocess:
-                word = word.upper()
-                word = word.replace(" ", "")
             if len(word) == 0:
                 break
             words.append(word)
 
         # generate crosswords
 
-        crosswords = create_crosswords(words=words, max=args.max, batch=args.batch, debug=args.debug)
+        crosswords = create_crosswords(words=words, max=args.max, batch=args.batch, debug=args.debug,
+                capitalize=not args.no_preprocess, remove_spaces=not args.no_preprocess)
 
         # print results
         

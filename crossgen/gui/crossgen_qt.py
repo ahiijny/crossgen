@@ -44,8 +44,8 @@ class CrossgenQt(QMainWindow):
 		self.save_path = ""
 		self.is_dirty = False
 		self.confirm_generate = False # if generated crosswords aren't saved, prompt user
-		self.max = 100
-		self.batch = 1
+		self.max = 10
+		self.batch = 5
 		self.words = []
 		self.crosswords = []
 		self.is_generating = False
@@ -193,7 +193,7 @@ class CrossgenQt(QMainWindow):
 					progress_callback=progress_callback)
 
 	def on_generate_pressed(self):
-		
+
 		if not self.can_generate(): # avoid generating while already generating, and prompt if previous crosswords are unsaved
 			return
 
