@@ -1,6 +1,8 @@
 from PyQt5.QtCore import (
 	QSize,
+	QObject,
 	QThread,
+	pyqtSignal,
 )
 from PyQt5.QtWidgets import (
 	QFrame,
@@ -37,14 +39,17 @@ class CrossgenQt(QMainWindow):
 		dim = app.primaryScreen().availableGeometry()
 		self.sizeHint = lambda : QSize(dim.width(), dim.height())
 
-		# Properties
+		# Attributes
 
 		self.save_path = ""
 		self.is_dirty = False
-		self.confirm_generate = True # if generated crosswords aren't saved, prompt user
-		self.max = 5
+		self.confirm_generate = False # if generated crosswords aren't saved, prompt user
+		self.max = 100
 		self.batch = 1
+		self.words = []
 		self.crosswords = []
+		self.is_generating = False
+		self.worker = None
 
 		# Build UI
 
@@ -157,7 +162,8 @@ class CrossgenQt(QMainWindow):
 	def on_input_changed(self):
 		text = self.text_input.document().toPlainText()
 		lines = text.split("\n")
-		word_count = sum(len(line) > 0 and not line.isspace() for line in lines)
+		self.words = [line.strip() for line in lines if len(line.strip()) > 0]
+		word_count = len(self.words)
 		label_text = f"{word_count} "
 		if word_count == 1:
 			label_text += "word"
@@ -167,30 +173,48 @@ class CrossgenQt(QMainWindow):
 
 		if word_count > 0:
 			self.statusBar().showMessage("Ready")
-			self.btn_generate.setEnabled(True)
 		else:
 			self.statusBar().showMessage("Enter some words!")
-			self.btn_generate.setEnabled(False)
+
+	class GenerateCrosswordsWorker(QThread):
+		num_done_updated = pyqtSignal(int)
+
+		def __init__(self, words, max, batch):
+			super().__init__()
+			self.words = words
+			self.max = max
+			self.batch = batch
+
+		def run(self):
+			def progress_callback(num_done):
+				self.num_done_updated.emit(num_done)
+
+			self.crosswords = crossgen.command.create_crosswords(words=self.words, max=self.max, batch=self.batch,
+					progress_callback=progress_callback)
 
 	def on_generate_pressed(self):
-		# TODO: long-running tasks should be done in a new thread so that it
-		# doesn't block the GUI thread
+		
+		if not self.can_generate(): # avoid generating while already generating, and prompt if previous crosswords are unsaved
+			return
 
-		if self.confirm_generate and self.is_dirty:
-			if not self.can_generate():
-				return
+		self.is_generating = True
+		self.btn_generate.setEnabled(False)
+		words = self.words
+		max_crosswords = self.max # it shouldn't be possible for this to change while generating, but just in case
 
-		text = self.text_input.document().toPlainText()
-		lines = text.split("\n")
-		words = [line.strip() for line in lines if not line.isspace()]
+		def update_progress(num_done):
+			self.statusBar().showMessage(f"Generated {num_done}/{max_crosswords} crosswords...")
 
-		def progress_callback(num_crosswords):
-			self.statusBar().showMessage(f"Generated {num_crosswords}/{self.max} crosswords...")
+			if num_done == max_crosswords: # finished
+				self.crosswords = self.worker.crosswords
+				self.statusBar().showMessage(f"Generated {max_crosswords} crosswords")
+				self.on_output_changed()
+				self.is_generating = False
+				self.btn_generate.setEnabled(True)
 
-		self.crosswords = crossgen.command.create_crosswords(words=words, max=self.max, batch=self.batch,
-				progress_callback=progress_callback)
-		self.on_output_changed()
-		self.statusBar().showMessage(f"Generated {self.max} crosswords")
+		self.worker = CrossgenQt.GenerateCrosswordsWorker(words, max_crosswords, self.batch)
+		self.worker.num_done_updated.connect(update_progress)
+		self.worker.start()
 
 	def on_output_changed(self):
 		if len(self.crosswords) > 0:
@@ -244,7 +268,23 @@ class CrossgenQt(QMainWindow):
 			event.ignore()
 
 	def can_generate(self):
-		if self.is_dirty:
+		if len(self.words) == 0:
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Information)
+			msg.setWindowTitle("Generate Crosswords")
+			msg.setText("Enter some words first!")			
+			msg.setStandardButtons(QMessageBox.Ok)
+			msg.exec_()
+			return False
+		if self.is_generating:
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Information)
+			msg.setWindowTitle("Generate Crosswords")
+			msg.setText("Already generating!")			
+			msg.setStandardButtons(QMessageBox.Ok)
+			msg.exec_()
+			return False
+		if self.confirm_generate and self.is_dirty:
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Information)
 			msg.setWindowTitle("Generate Crosswords")
