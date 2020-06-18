@@ -1,5 +1,6 @@
 from PyQt5.QtCore import (
 	QSize,
+	QThread,
 )
 from PyQt5.QtWidgets import (
 	QFrame,
@@ -40,6 +41,7 @@ class CrossgenQt(QMainWindow):
 
 		self.save_path = ""
 		self.is_dirty = False
+		self.confirm_generate = True # if generated crosswords aren't saved, prompt user
 		self.max = 5
 		self.batch = 1
 		self.crosswords = []
@@ -170,14 +172,13 @@ class CrossgenQt(QMainWindow):
 			self.statusBar().showMessage("Enter some words!")
 			self.btn_generate.setEnabled(False)
 
-		if (len(self.text_input.document().toPlainText()) > 0):
-			self.set_dirty(True)
-		else:
-			self.set_dirty(False)
-
 	def on_generate_pressed(self):
 		# TODO: long-running tasks should be done in a new thread so that it
 		# doesn't block the GUI thread
+
+		if self.confirm_generate and self.is_dirty:
+			if not self.can_generate():
+				return
 
 		text = self.text_input.document().toPlainText()
 		lines = text.split("\n")
@@ -241,6 +242,18 @@ class CrossgenQt(QMainWindow):
 			event.accept()
 		else:
 			event.ignore()
+
+	def can_generate(self):
+		if self.is_dirty:
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Information)
+			msg.setWindowTitle("Generate Crosswords")
+			msg.setText("Current crosswords aren't saved. Generate new crosswords?")			
+			msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+			retval = msg.exec_()
+			if retval == QMessageBox.No:
+				return False
+		return True
 
 	def can_exit(self):
 		if self.is_dirty:
