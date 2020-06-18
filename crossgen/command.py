@@ -2,6 +2,51 @@ import logging
 import argparse
 import sys
 
+from crossgen import walker
+from crossgen import pretty
+
+# Helper functions
+
+def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=None):
+    """progress_callback should be of the form `lambda num_crosswords_generated : int`
+
+    Returns a list of the form (score, crossword_grid).
+    """
+    # debourg
+
+    if debug:
+        import logging
+        logging.basicConfig(level=logging.info)
+
+    # batch is at most max
+
+    if batch > max:
+        batch = max
+
+    # create
+
+    crosswords = [] # list of (score, crossword_grid) instances
+    try:
+        print("Press Ctrl+C to stop at any time", file=sys.stderr)
+        while max is None or len(crosswords) < max:
+            for crossword in walker.generate_crosswords(words, max=batch):
+                print(".", end="", file=sys.stderr, flush=True)
+                crosswords.append((pretty.be_judgmental(crossword), crossword))
+                if progress_callback is not None:
+                    progress_callback(len(crosswords))
+                if len(crosswords) == max:
+                    break
+    except KeyboardInterrupt: # graceful interrupt
+        print(f"\ngenerated {len(crosswords)} crosswords", file=sys.stderr)
+
+    # sort results in descending order by score
+
+    crosswords = sorted(crosswords, key=lambda x: x[0], reverse=True)
+
+    return crosswords
+
+# Argparse stuff
+
 class main:
     command_names = [
         "test",
@@ -74,9 +119,6 @@ class create:
         
         Output is in plain text format."""
 
-        from crossgen import walker
-        from crossgen import pretty
-
         # input stream
         infile = sys.stdin
         inpath = args.from_file
@@ -86,6 +128,8 @@ class create:
             except IOError:
                 print(f"could not open file {infile}")
                 return 1
+        else:
+            print("Please input a newline separated list of words, terminated with an empty line:")
 
         # pretty output stream
         outfile = sys.stdout
@@ -112,11 +156,9 @@ class create:
                             success = True
                 except IOError:
                     print(f"could not open outfile {outpath}", file=sys.stderr)
+            print(f"(The new crosswords will be saved to {outpath})", file=sys.stderr)
 
-        # debourg
-        if args.debug:
-            import logging
-            logging.basicConfig(level=logging.info)
+        # input
 
         words = []
 
@@ -131,24 +173,11 @@ class create:
 
         # generate crosswords
 
-        if args.batch > args.max:
-            args.batch = args.max
+        crosswords = create_crosswords(words=words, max=args.max, batch=args.batch, debug=args.debug)
 
-        crosswords = [] # list of (score, crossword_grid) instances
-        try:
-            print("Press Ctrl+C to stop at any time", file=sys.stderr)
-            while args.max is None or len(crosswords) < args.max:
-                for crossword in walker.generate_crosswords(words, max=args.batch):
-                    print(".", end="", file=sys.stderr, flush=True)
-                    crosswords.append((pretty.be_judgmental(crossword), crossword))
-                    if len(crosswords) == args.max:
-                        break
-        except KeyboardInterrupt: # graceful interrupt
-            print(f"\ngenerated {len(crosswords)} crosswords", file=sys.stderr)
+        # print results
         
         print("", file=sys.stderr)
-
-        crosswords = sorted(crosswords, key=lambda x: x[0], reverse=True)
 
         pretty_printer = pretty.HtmlGridPrinter(outfile)
         pretty_printer.print_header()

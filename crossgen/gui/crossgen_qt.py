@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 import crossgen.pretty as pretty
+import crossgen.command as command
 
 class CrossgenQt(QMainWindow):
 	def __init__(self, app):
@@ -36,6 +37,7 @@ class CrossgenQt(QMainWindow):
 
 		self.save_path = ""
 		self.is_dirty = False
+		self.create_cmd = command.create()
 
 		# Build UI
 
@@ -294,7 +296,7 @@ class CrossgenQt(QMainWindow):
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Warning)
 			msg.setWindowTitle("Exit Application")
-			msg.setText("Are you sure you want to exit?")			
+			msg.setText("You have unsaved changes. Are you sure you want to exit?")			
 			msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 			retval = msg.exec_()
 			if retval == QMessageBox.No:
