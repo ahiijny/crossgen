@@ -174,7 +174,7 @@ class Grid: # for now, assume no duplicate words
     def get_size(self):
         """return (width, height) of smallest grid that bounds words"""
         self._recalc_bounds()
-        return (self.xmax - self.xmin, self.ymax - self.ymin)
+        return (self.xmax + 1 - self.xmin, self.ymax + 1 - self.ymin)
 
     def get_grid_numbers(self):
         """Return a map from (grid_x, grid_y) to number (1-indexed), relative to printed grid"""
