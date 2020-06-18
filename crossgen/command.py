@@ -8,7 +8,7 @@ from crossgen import pretty
 # Helper functions
 
 def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=None):
-    """progress_callback should be of the form `lambda num_crosswords_generated : int`
+    """progress_callback should be of the form `lambda num_crosswords : int`
 
     Returns a list of the form (score, crossword_grid).
     """
@@ -179,15 +179,11 @@ class create:
         
         print("", file=sys.stderr)
 
-        pretty_printer = pretty.HtmlGridPrinter(outfile)
-        pretty_printer.print_header()
-
         for i, (score, crossword) in enumerate(crosswords):
-            print(f"===CROSSWORD {i+1}, score:{score}===")
+            print(f"===CROSSWORD {i+1}, score:{score:.2f}===")
             print(crossword)
             print("===END===")
             print()
-            
-            pretty_printer.print_crossword(crossword, title_string=f"Crossword {i+1}, score:{score}")
 
-        pretty_printer.print_footer()
+        pretty_printer = pretty.HtmlGridPrinter(outfile)
+        pretty_printer.print_crosswords(crosswords)

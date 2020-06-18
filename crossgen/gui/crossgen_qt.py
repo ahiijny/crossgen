@@ -21,8 +21,11 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
-import crossgen.pretty as pretty
-import crossgen.command as command
+from io import StringIO
+
+import crossgen.command
+import crossgen.grid
+import crossgen.pretty
 
 class CrossgenQt(QMainWindow):
 	def __init__(self, app):
@@ -37,7 +40,9 @@ class CrossgenQt(QMainWindow):
 
 		self.save_path = ""
 		self.is_dirty = False
-		self.create_cmd = command.create()
+		self.max = 5
+		self.batch = 1
+		self.crosswords = []
 
 		# Build UI
 
@@ -54,6 +59,7 @@ class CrossgenQt(QMainWindow):
 		self.layout.addWidget(self.input_pane)
 
 		self.btn_generate = QPushButton('Generate')
+		self.btn_generate.clicked.connect(self.on_generate_pressed)
 		self.layout.addWidget(self.btn_generate)
 
 		self.output_pane = self._build_output_pane()
@@ -64,7 +70,7 @@ class CrossgenQt(QMainWindow):
 		# Post-setup
 
 		self._refresh_window_title()
-		self.on_text_changed() # populate status bar with initial status
+		self.on_input_changed() # populate status bar with initial status
 		self.on_output_changed()
 
 	def _refresh_window_title(self):
@@ -111,7 +117,7 @@ class CrossgenQt(QMainWindow):
 		font.setFamily("Consolas")
 		font.setPointSize(13)
 		doc.setDefaultFont(font)
-		self.text_input.textChanged.connect(self.on_text_changed)
+		self.text_input.textChanged.connect(self.on_input_changed)
 		input_layout.addWidget(self.text_input)
 
 		self.word_count_label = QLabel("0 words")
@@ -146,7 +152,7 @@ class CrossgenQt(QMainWindow):
 
 		return output_pane
 
-	def on_text_changed(self):
+	def on_input_changed(self):
 		text = self.text_input.document().toPlainText()
 		lines = text.split("\n")
 		word_count = sum(len(line) > 0 and not line.isspace() for line in lines)
@@ -169,85 +175,30 @@ class CrossgenQt(QMainWindow):
 		else:
 			self.set_dirty(False)
 
-	def on_output_changed(self):
-		# TODO: actually generate the output
+	def on_generate_pressed(self):
+		# TODO: long-running tasks should be done in a new thread so that it
+		# doesn't block the GUI thread
 
-		self.output_view.setHtml("""
-<!DOCTYPE html>
-<head>
-<style>
-	{style}
-</style>
-</head>
-<body>
-<h2>Testing Testing</h2>
-<table>
-  <tr>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td><sup>5</sup>M</td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-  </tr>
-  <tr>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td><sup>8</sup>M</td>
-    <td>O</td>
-    <td>N</td>
-    <td>T</td>
-    <td>A</td>
-    <td>N</td>
-    <td>A</td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-  </tr>
-  <tr>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td>R</td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-  </tr>
-</table>
-</body>
-</html>""".format(style=pretty.style))
+		text = self.text_input.document().toPlainText()
+		lines = text.split("\n")
+		words = [line.strip() for line in lines if not line.isspace()]
+
+		def progress_callback(num_crosswords):
+			self.statusBar().showMessage(f"Generated {num_crosswords}/{self.max} crosswords...")
+
+		self.crosswords = crossgen.command.create_crosswords(words=words, max=self.max, batch=self.batch,
+				progress_callback=progress_callback)
+		self.on_output_changed()
+		self.statusBar().showMessage(f"Generated {self.max} crosswords")
+
+	def on_output_changed(self):
+		if len(self.crosswords) > 0:
+			strbuf = StringIO()
+			pretty_printer = crossgen.pretty.HtmlGridPrinter(outstream=strbuf)
+			pretty_printer.print_crosswords(self.crosswords)
+			html = strbuf.getvalue()
+			self.output_view.setHtml(html)
+			self.set_dirty(True)
 
 	def set_dirty(self, is_dirty):
 		"""Dirty = if the file has been changed since it was last saved"""

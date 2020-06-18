@@ -24,12 +24,98 @@ style = """
     }
 """
 
+example_html = """
+<!DOCTYPE html>
+<head>
+<style>
+    {style}
+</style>
+</head>
+<body>
+<h2>Testing Testing</h2>
+<table>
+  <tr>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td><sup>5</sup>M</td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+  </tr>
+  <tr>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td><sup>8</sup>M</td>
+    <td>O</td>
+    <td>N</td>
+    <td>T</td>
+    <td>A</td>
+    <td>N</td>
+    <td>A</td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+  </tr>
+  <tr>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td>R</td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+    <td class="empty"> </td>
+  </tr>
+</table>
+</body>
+</html>""".format(style=style)
+
 class HtmlGridPrinter:
     
     def __init__(self, outstream=sys.stdout):
         self.out = outstream
         global style
         self.style = style
+
+    def print_crosswords(self, crosswords):
+        """`crosswords` should be a list of (score, crossword_grid) tuples"""
+        self.print_header()
+
+        for i, (score, crossword) in enumerate(crosswords):            
+            self.print_crossword(crossword, title_string=f"Crossword {i+1}, score:{score:.2f}")
+
+        self.print_footer()
 
     def print_header(self):
         out = self.out
