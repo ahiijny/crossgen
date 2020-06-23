@@ -13,12 +13,15 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
     remove_spaces = remove spaces from within words
 
     Returns a list of the form (score, crossword_grid).
+
+    If could not generate any crosswords, progress_callback called with -1.
     """
     # debourg
 
     if debug:
         import logging
-        logging.basicConfig(level=logging.info)
+        logging.basicConfig(level=logging.DEBUG)
+        logging.getLogger().setLevel(logging.DEBUG)
 
     # batch is at most max
 
@@ -46,6 +49,9 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
                     progress_callback(len(crosswords))
                 if len(crosswords) == max:
                     break
+            if len(crosswords) == 0: # hacky fix to prevent infinite loop in case crossword not possible with words given
+                progress_callback(-1)
+                break
     except KeyboardInterrupt: # graceful interrupt
         print(f"\ngenerated {len(crosswords)} crosswords", file=sys.stderr)
 

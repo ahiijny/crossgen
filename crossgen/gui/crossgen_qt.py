@@ -193,8 +193,11 @@ class CrossgenQt(QMainWindow):
 			self.crosswords = crossgen.command.create_crosswords(words=self.words, max=self.max, batch=self.batch,
 					progress_callback=progress_callback)
 
-	def on_generate_pressed(self):
+	def on_done_generating(self):
+		self.gen_worker = None
+		self.btn_generate.setEnabled(True)
 
+	def on_generate_pressed(self):
 		if not self.can_generate(): # avoid generating while already generating, and prompt if previous crosswords are unsaved
 			return
 
@@ -203,14 +206,18 @@ class CrossgenQt(QMainWindow):
 		max_crosswords = self.max # it shouldn't be possible for this to change while generating, but just in case
 
 		def update_progress(num_done):
+			if num_done == -1:
+				self.statusBar().showMessage(f"Could not generate any crosswords with the words given.")
+				self.on_done_generating()
+				return
+
 			self.statusBar().showMessage(f"Generated {num_done}/{max_crosswords} crosswords...")
 
 			if num_done == max_crosswords: # finished
 				self.crosswords = self.gen_worker.crosswords
 				self.statusBar().showMessage(f"Generated {max_crosswords} crosswords")
 				self.on_output_changed()
-				self.gen_worker = None
-				self.btn_generate.setEnabled(True)
+				self.on_done_generating()
 
 		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(words, max_crosswords, self.batch)
 		self.gen_worker.num_done_updated.connect(update_progress)

@@ -71,6 +71,7 @@ class CrosswordTreeSearch:
         self.node_count = 0
     
     def print_pv(self, this_grid, this_link, mode):
+        """pv = primary variation"""
         labels = []
         node = (this_grid, this_link, mode)
         parents = list(self.search_tree.predecessors(node))

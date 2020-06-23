@@ -177,7 +177,10 @@ class Grid: # for now, assume no duplicate words
         return (self.xmax + 1 - self.xmin, self.ymax + 1 - self.ymin)
 
     def get_grid_numbers(self):
-        """Return a map from (grid_x, grid_y) to number (1-indexed), relative to printed grid"""
+        """Return a map from (grid_x, grid_y) to number (1-indexed), relative to printed grid
+
+        Numbers are in ascending order from top to bottom, left to right.
+        """
         self._recalc_bounds()
         word_starts = []
         for data in self.words.values():
