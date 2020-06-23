@@ -48,8 +48,9 @@ class CrossgenQt(QMainWindow):
 		self.batch = 5
 		self.words = []
 		self.crosswords = []
-		self.is_generating = False
-		self.worker = None
+		self.gen_worker = None
+		self.save_worker = None
+		self.html = ""
 
 		# Build UI
 
@@ -197,7 +198,6 @@ class CrossgenQt(QMainWindow):
 		if not self.can_generate(): # avoid generating while already generating, and prompt if previous crosswords are unsaved
 			return
 
-		self.is_generating = True
 		self.btn_generate.setEnabled(False)
 		words = self.words
 		max_crosswords = self.max # it shouldn't be possible for this to change while generating, but just in case
@@ -206,23 +206,23 @@ class CrossgenQt(QMainWindow):
 			self.statusBar().showMessage(f"Generated {num_done}/{max_crosswords} crosswords...")
 
 			if num_done == max_crosswords: # finished
-				self.crosswords = self.worker.crosswords
+				self.crosswords = self.gen_worker.crosswords
 				self.statusBar().showMessage(f"Generated {max_crosswords} crosswords")
 				self.on_output_changed()
-				self.is_generating = False
+				self.gen_worker = None
 				self.btn_generate.setEnabled(True)
 
-		self.worker = CrossgenQt.GenerateCrosswordsWorker(words, max_crosswords, self.batch)
-		self.worker.num_done_updated.connect(update_progress)
-		self.worker.start()
+		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(words, max_crosswords, self.batch)
+		self.gen_worker.num_done_updated.connect(update_progress)
+		self.gen_worker.start()
 
 	def on_output_changed(self):
 		if len(self.crosswords) > 0:
 			strbuf = StringIO()
 			pretty_printer = crossgen.pretty.HtmlGridPrinter(outstream=strbuf)
 			pretty_printer.print_crosswords(self.crosswords)
-			html = strbuf.getvalue()
-			self.output_view.setHtml(html)
+			self.html = strbuf.getvalue()
+			self.output_view.setHtml(self.html)
 			self.set_dirty(True)
 
 	def set_dirty(self, is_dirty):
@@ -230,20 +230,62 @@ class CrossgenQt(QMainWindow):
 		self.is_dirty = is_dirty
 		self._refresh_window_title()			
 
+	class SaveCrosswordsWorker(QThread):
+		done = pyqtSignal(bool) # bool is_success
+
+		def __init__(self, save_path, html):
+			super().__init__()
+			self.save_path = save_path
+			self.html = html
+
+		def run(self):
+			try:
+				with open(self.save_path, "w", encoding="utf-8") as f:
+					f.write(self.html)
+				self.done.emit(True)
+			except IOError as err:
+				print("Save error:", err, file=sys.stderr)
+				self.done.emit(False)
+
+	def can_save(self):
+		if self.save_worker is not None:
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Information)
+			msg.setWindowTitle("Save Crosswords")
+			msg.setText("Not done previous save yet!")			
+			msg.setStandardButtons(QMessageBox.Ok)
+			msg.exec_()
+			return False
+		return True
+
 	def save(self):
+		if not self.can_save():
+			return
+
 		if self.save_path == "":
 			self.save_as()
 			return
 
-		def on_htmlled(html):
-			print(html) # TODO actually save the file
+		save_path = self.save_path
+		html = self.html
 
-			self.statusBar().showMessage(f"Saved to {self.save_path}")
-			self.set_dirty(False)
+		def done_save(is_success):
+			if is_success:
+				self.statusBar().showMessage(f"Saved to {save_path}")
+				self.set_dirty(False)
+			else:
+				self.statusBar().showMessage(f"Error: Failed to save to {save_path}")
+			self.save_worker = None
 
-		self.output_view.page().toHtml(on_htmlled)
+		self.save_worker = CrossgenQt.SaveCrosswordsWorker(save_path, html)
+		self.save_worker.done.connect(done_save)
+		self.save_worker.start()
+		self.statusBar().showMessage(f"Saving...")
 
 	def save_as(self):
+		if not self.can_save():
+			return
+
 		dialog = QFileDialog(self, caption="Save Crosswords", directory="./crosswords.html", filter="HTML files (*.html)")
 		dialog.setDefaultSuffix(".html")
 		dialog.setFileMode(QFileDialog.AnyFile) # including files that don't exist
@@ -276,7 +318,7 @@ class CrossgenQt(QMainWindow):
 			msg.setStandardButtons(QMessageBox.Ok)
 			msg.exec_()
 			return False
-		if self.is_generating:
+		if self.gen_worker is not None:
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Information)
 			msg.setWindowTitle("Generate Crosswords")
