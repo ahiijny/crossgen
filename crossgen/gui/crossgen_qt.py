@@ -25,10 +25,12 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 from io import StringIO
+import logging
 
 import crossgen.command
 import crossgen.grid
 import crossgen.pretty
+from crossgen.gui.debug_window import DebugWindow
 
 class CrossgenQt(QMainWindow):
 	def __init__(self, app):
@@ -51,6 +53,8 @@ class CrossgenQt(QMainWindow):
 		self.gen_worker = None
 		self.save_worker = None
 		self.html = ""
+		self.debug_window = None
+		self.qt_log_handler = None
 
 		# Build UI
 
@@ -71,7 +75,7 @@ class CrossgenQt(QMainWindow):
 		self.layout.addWidget(self.btn_generate)
 
 		self.output_pane = self._build_output_pane()
-		self.layout.addWidget(self.output_pane)		
+		self.layout.addWidget(self.output_pane)
 		
 		self.setCentralWidget(self.pane)
 
@@ -91,24 +95,30 @@ class CrossgenQt(QMainWindow):
 
 	def _build_main_menu(self):
 		menubar = self.menuBar()
-		fileMenu = menubar.addMenu('&File')
+		file_menu = menubar.addMenu('&File')
+		tools_menu = menubar.addMenu('&Tools')
 
 		act_save = QAction('&Save', self) # http://zetcode.com/gui/pyqt5/menustoolbars/
 		act_save.setShortcut('Ctrl+S')
 		act_save.setStatusTip('Save the generated crosswords')
 		act_save.triggered.connect(self.save)
-		fileMenu.addAction(act_save)
+		file_menu.addAction(act_save)
 
 		act_save_as = QAction('&Save As...', self)
 		act_save_as.setStatusTip('Save a copy of the generated crosswords')
 		act_save_as.triggered.connect(self.save_as)
-		fileMenu.addAction(act_save_as)
+		file_menu.addAction(act_save_as)
 
 		act_exit = QAction('&Exit', self)
 		act_exit.setShortcut('Alt+F4')
 		act_exit.setStatusTip('Exit application')
 		act_exit.triggered.connect(self.close)
-		fileMenu.addAction(act_exit)
+		file_menu.addAction(act_exit)
+
+		act_debug = QAction('&Debug logging', self)
+		act_debug.setStatusTip('Show debug output for crossword generation')
+		act_debug.triggered.connect(self.show_debug)
+		tools_menu.addAction(act_debug)
 
 	def _build_input_pane(self):
 		input_layout = QBoxLayout(QBoxLayout.TopToBottom)
@@ -355,3 +365,42 @@ class CrossgenQt(QMainWindow):
 			if retval == QMessageBox.No:
 				return False
 		return True
+
+	# https://stackoverflow.com/questions/24469662/how-to-redirect-logger-output-into-pyqt-text-widget
+	# https://stackoverflow.com/questions/28655198/best-way-to-display-logs-in-pyqt
+
+	class QtLogHandler(logging.Handler, QObject): # multiple inheritance hack
+		logged_msg = pyqtSignal(str)
+
+		def __init__(self):
+			logging.Handler.__init__(self)
+			QObject.__init__(self)
+
+		def emit(self, record):
+			msg = self.format(record)
+			self.logged_msg.emit(msg)
+
+	def show_debug(self):
+		if self.debug_window is None:
+			FORMAT = "[%(asctime)s] %(message)s"
+			DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+			logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt=DATE_FORMAT)
+
+			self.debug_window = DebugWindow(parent=self)
+			self.qt_log_handler = self.QtLogHandler()
+			self.qt_log_handler.setFormatter(logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT))
+			self.qt_log_handler.logged_msg.connect(self.debug_window.append_text)
+
+			logging.getLogger().addHandler(self.qt_log_handler)
+			logging.info("Set up logging")
+
+			def on_debug_closed():
+				logging.getLogger().setLevel(logging.INFO)
+				logging.info("Logging level set to INFO")
+
+			self.debug_window.closed.connect(on_debug_closed)
+
+		if not self.debug_window.isVisible():
+			logging.getLogger().setLevel(logging.DEBUG)
+			logging.info("Logging level set to DEBUG")
+			self.debug_window.show()
