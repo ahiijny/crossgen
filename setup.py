@@ -11,7 +11,7 @@ setup(
 	long_description=read('README.md'),
 	author="ahiijny",
 	author_email="ahiijny@gmail.com",
-	license="MIT",
+	license="GPLv3",
 	packages=find_packages(),
 	python_requires=">=3",
 	install_requires = [
