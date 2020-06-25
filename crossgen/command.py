@@ -72,7 +72,7 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
     except KeyboardInterrupt: # graceful interrupt
         pass
     
-    print(f"\ngenerated {len(crosswords)} crosswords", file=sys.stderr)
+    print(f"\nGenerated {len(crosswords)} crosswords", file=sys.stderr)
 
     # sort results in descending order by score
 

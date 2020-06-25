@@ -190,13 +190,14 @@ class CrossgenQt(QMainWindow):
 
 	class GenerateCrosswordsWorker(QThread):
 		num_done_updated = pyqtSignal(int)
+		finished = pyqtSignal()
 
 		def __init__(self, words, max, batch):
 			super().__init__()
 			self.words = words
 			self.max = max
 			self.batch = batch
-			self.crosswords = None
+			self.crosswords = []
 
 		def run(self):
 			def progress_callback(num_done):
@@ -205,9 +206,7 @@ class CrossgenQt(QMainWindow):
 			self.crosswords = crossgen.command.create_crosswords(words=self.words, max=self.max, batch=self.batch,
 					progress_callback=progress_callback)
 
-	def on_done_generating(self):
-		self.gen_worker = None
-		self.btn_generate.setEnabled(True)
+			self.finished.emit()
 
 	def on_generate_pressed(self):
 		if not self.can_generate(): # avoid generating while already generating, and prompt if previous crosswords are unsaved
@@ -220,26 +219,26 @@ class CrossgenQt(QMainWindow):
 		def update_progress(num_done):
 			if num_done == 0:
 				self.statusBar().showMessage(f"Could not generate any crosswords with the words given.")
-				self.on_done_generating()
 				return
 
 			self.statusBar().showMessage(f"Generated {num_done}/{max_crosswords} crosswords...")
 
-			if num_done == max_crosswords: # finished
-				self.crosswords = self.gen_worker.crosswords
-				self.statusBar().showMessage(f"Generated {max_crosswords} crosswords")
-				self.on_output_changed(self.crosswords, words)
-				self.on_done_generating()
+		def on_done_generating():
+			self.crosswords = self.gen_worker.crosswords
+			self.on_output_changed(self.crosswords, words)
+			self.gen_worker = None
+			self.btn_generate.setEnabled(True)
 
 		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(words, max_crosswords, self.batch)
 		self.gen_worker.num_done_updated.connect(update_progress)
+		self.gen_worker.finished.connect(on_done_generating)
 		self.gen_worker.start()
 
 	def on_output_changed(self, crosswords=[], words=[]):
-		if len(self.crosswords) > 0:
+		if len(crosswords) > 0:
 			strbuf = StringIO()
 			pretty_printer = crossgen.pretty.HtmlGridPrinter(outstream=strbuf)
-			pretty_printer.print_crosswords(self.crosswords, self.words)
+			pretty_printer.print_crosswords(crosswords, words)
 			self.html = strbuf.getvalue()
 			self.output_view.setHtml(self.html)
 			self.set_dirty(True)
