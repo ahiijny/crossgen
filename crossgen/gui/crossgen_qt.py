@@ -226,18 +226,18 @@ class CrossgenQt(QMainWindow):
 			if num_done == max_crosswords: # finished
 				self.crosswords = self.gen_worker.crosswords
 				self.statusBar().showMessage(f"Generated {max_crosswords} crosswords")
-				self.on_output_changed()
+				self.on_output_changed(self.crosswords, words)
 				self.on_done_generating()
 
 		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(words, max_crosswords, self.batch)
 		self.gen_worker.num_done_updated.connect(update_progress)
 		self.gen_worker.start()
 
-	def on_output_changed(self):
+	def on_output_changed(self, crosswords=[], words=[]):
 		if len(self.crosswords) > 0:
 			strbuf = StringIO()
 			pretty_printer = crossgen.pretty.HtmlGridPrinter(outstream=strbuf)
-			pretty_printer.print_crosswords(self.crosswords)
+			pretty_printer.print_crosswords(self.crosswords, self.words)
 			self.html = strbuf.getvalue()
 			self.output_view.setHtml(self.html)
 			self.set_dirty(True)

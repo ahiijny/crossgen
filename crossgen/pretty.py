@@ -2,6 +2,7 @@
 
 import html
 import sys
+import datetime
 
 from crossgen import grid
 
@@ -24,93 +25,18 @@ style = """
     }
 """
 
-example_html = """
-<!DOCTYPE html>
-<head>
-<style>
-    {style}
-</style>
-</head>
-<body>
-<h2>Testing Testing</h2>
-<table>
-  <tr>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td><sup>5</sup>M</td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-  </tr>
-  <tr>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td><sup>8</sup>M</td>
-    <td>O</td>
-    <td>N</td>
-    <td>T</td>
-    <td>A</td>
-    <td>N</td>
-    <td>A</td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-  </tr>
-  <tr>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td>R</td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-    <td class="empty"> </td>
-  </tr>
-</table>
-</body>
-</html>""".format(style=style)
-
 class HtmlGridPrinter:
-    
     def __init__(self, outstream=sys.stdout):
         self.out = outstream
         global style
         self.style = style
+        self.datefmt = "%A, %B %d, %Y, %H:%M:%S %p %z"
 
-    def print_crosswords(self, crosswords):
+    def print_crosswords(self, crosswords, words, date=None):
         """`crosswords` should be a list of (score, crossword_grid) tuples"""
         self.print_header()
+
+        self.print_title(words, date)
 
         for i, (score, crossword) in enumerate(crosswords):            
             self.print_crossword(crossword, title_string=f"Crossword {i+1}, score:{score:.2f}")
@@ -128,6 +54,19 @@ class HtmlGridPrinter:
         print("</style>", file=out)
         print("</head>", file=out)
         print("<body>", file=out)
+
+    def print_title(self, words, date=None):
+        out = self.out
+        if date is None:
+            date = datetime.datetime.now().astimezone()
+
+        print(f"<h1>Crosswords</h1>", file=out)
+        print(f"<p>Generated on: {date.strftime(self.datefmt)}</p>", file=out)
+        print(f"<h2>Words</h2>", file=out)
+        print(f"<ul>", file=out)
+        for word in words:
+            print(f"<li>{word}", file=out)
+        print(f"</ul>", file=out)
 
     def print_crossword(self, crossword, title_string):
         out = self.out
@@ -207,6 +146,7 @@ def test_html():
 
     printer = HtmlGridPrinter()
     printer.print_header()
+    printer.print_title()
     printer.print_crossword(g, "lol jk")
     printer.print_footer()
 

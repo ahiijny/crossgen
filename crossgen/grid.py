@@ -221,7 +221,8 @@ class Grid: # for now, assume no duplicate words
             self.ymax = max(self.ymax, coords[1])
 
     def __hash__(self):
-        repr_str = "".join(str(attr["coords"]) + str(attr["orientation"]) for word, attr in self.words.items())
+        repr_str = "".join(str(attr["coords"]) + str(attr["orientation"]) for word, attr in sorted(self.words.items()))
+            # sorting here to keep items in alphabetical order (in Python 3.6 onwards, dicts keep items in insertion order)
         return hash(repr_str)
 
     def __eq__(self, other):

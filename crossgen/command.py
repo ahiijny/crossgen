@@ -200,4 +200,4 @@ class create:
             print()
 
         pretty_printer = pretty.HtmlGridPrinter(outfile)
-        pretty_printer.print_crosswords(crosswords)
+        pretty_printer.print_crosswords(crosswords, words)
