@@ -20,14 +20,22 @@ from PyQt5.QtWidgets import (
 	QAction,
 	QMessageBox,
 	QFileDialog,
-	QSizePolicy
+	QSizePolicy,
+	QComboBox,
+)
+from PyQt5.QtGui import (
+	QTextCursor,
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 from io import StringIO
+import sys
 import logging
 
 class DebugWindow(QMainWindow):
+	FORMAT = "[%(asctime)s] %(message)s"
+	DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 	def __init__(self, parent=None):
 		super().__init__(parent=parent)
 		self.pane = QWidget()
@@ -37,6 +45,19 @@ class DebugWindow(QMainWindow):
 
 		self.layout = QBoxLayout(QBoxLayout.TopToBottom)
 		self.pane.setLayout(self.layout)
+
+		self.config_pane = QWidget()
+		self.config_layout = QBoxLayout(QBoxLayout.LeftToRight)
+		self.config_layout.setContentsMargins(0, 0, 0, 0)
+		self.config_pane.setLayout(self.config_layout)
+		self.label = QLabel("Debug level:")
+		self.label.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+		self.config_layout.addWidget(self.label)
+		self.level_chooser = QComboBox()
+		self.level_chooser.insertItems(0, ['INFO', 'DEBUG'])
+		self.level_chooser.currentTextChanged.connect(self.set_logging_level)
+		self.config_layout.addWidget(self.level_chooser)
+		self.layout.addWidget(self.config_pane)
 
 		self.debug_pane = QPlainTextEdit()
 		doc = self.debug_pane.document()
@@ -49,6 +70,10 @@ class DebugWindow(QMainWindow):
 
 		self.layout.addWidget(self.debug_pane)
 
+		# Post-setup
+
+		self.level_chooser.setCurrentText("INFO")
+
 	# signals
 
 	closed = pyqtSignal()
@@ -59,8 +84,23 @@ class DebugWindow(QMainWindow):
 
 	# slots
 
+	def set_logging_level(self, level): # TODO: how to make sure combobox keeps in sync?
+		if level == "INFO":
+			logging.getLogger().setLevel(logging.INFO)
+		elif level == "DEBUG":
+			logging.getLogger().setLevel(logging.DEBUG)
+		else:
+			raise NotImplementedError()
+		logging.info(f"Logging level set to {level}")
+
 	def append_text(self, text):
-		self.debug_pane.appendPlainText(text)
+		"""Caller must provide their own newlines; no newlines are automatically added"""
+		
+		# https://stackoverflow.com/questions/13559990/how-to-append-text-to-qplaintextedit-without-adding-newline-and-keep-scroll-at
+
+		self.debug_pane.moveCursor(QTextCursor.End)
+		self.debug_pane.insertPlainText(text)
+		self.debug_pane.moveCursor(QTextCursor.End)
 		
 if __name__ == "__main__":
 	app = QApplication([])

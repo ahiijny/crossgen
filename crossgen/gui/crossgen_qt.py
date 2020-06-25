@@ -20,11 +20,12 @@ from PyQt5.QtWidgets import (
 	QAction,
 	QMessageBox,
 	QFileDialog,
-	QSizePolicy
+	QSizePolicy,
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 from io import StringIO
+import sys
 import logging
 
 import crossgen.command
@@ -195,6 +196,7 @@ class CrossgenQt(QMainWindow):
 			self.words = words
 			self.max = max
 			self.batch = batch
+			self.crosswords = None
 
 		def run(self):
 			def progress_callback(num_done):
@@ -377,30 +379,39 @@ class CrossgenQt(QMainWindow):
 			QObject.__init__(self)
 
 		def emit(self, record):
-			msg = self.format(record)
+			msg = self.format(record) + "\n"
 			self.logged_msg.emit(msg)
+
+		def write(self, text):
+			self.logged_msg.emit(text)
+
+		def flush(self):
+			pass			
 
 	def show_debug(self):
 		if self.debug_window is None:
-			FORMAT = "[%(asctime)s] %(message)s"
-			DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-			logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt=DATE_FORMAT)
-
 			self.debug_window = DebugWindow(parent=self)
 			self.qt_log_handler = self.QtLogHandler()
-			self.qt_log_handler.setFormatter(logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT))
+			formatter = logging.Formatter(fmt=self.debug_window.FORMAT, datefmt=self.debug_window.DATE_FORMAT)
+			self.qt_log_handler.setFormatter(formatter)
 			self.qt_log_handler.logged_msg.connect(self.debug_window.append_text)
 
+			logging.basicConfig(format=self.debug_window.FORMAT, datefmt=self.debug_window.DATE_FORMAT, level=logging.INFO)
 			logging.getLogger().addHandler(self.qt_log_handler)
+			logging.getLogger().setLevel(logging.INFO)
 			logging.info("Set up logging")
 
+			old_stderr = sys.stderr
+
 			def on_debug_closed():
-				logging.getLogger().setLevel(logging.INFO)
-				logging.info("Logging level set to INFO")
+				sys.stderr = old_stderr
+				logging.info("sys.stderr restored back to original value")
 
 			self.debug_window.closed.connect(on_debug_closed)
 
 		if not self.debug_window.isVisible():
-			logging.getLogger().setLevel(logging.DEBUG)
-			logging.info("Logging level set to DEBUG")
+			sys.stderr = self.qt_log_handler
+			
+			logging.info("sys.stderr now prints to the debug window")
+
 			self.debug_window.show()
