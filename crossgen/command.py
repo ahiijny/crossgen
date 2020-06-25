@@ -7,10 +7,13 @@ from crossgen import pretty
 
 # Helper functions
 
-def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=None, capitalize=True, remove_spaces=True):
+def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=None,
+            capitalize=True, remove_spaces=True, no_progress_timeout=5):
     """progress_callback should be of the form `lambda num_crosswords : int`
     capitalize = uppercase everything
     remove_spaces = remove spaces from within words
+    no_progress_timeout = abort generation of crosswords if this many batches
+        elapse without generating a single additional crossword; put -1 for no timeout
 
     Returns a list of the form (score, crossword_grid).
 
@@ -19,7 +22,6 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
     # debourg
 
     if debug:
-        import logging
         logging.basicConfig(level=logging.DEBUG)
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -27,6 +29,11 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
 
     if batch > max:
         batch = max
+
+    # progress callback
+
+    if progress_callback is None: # replace it with a no-op lambda so that we don't have to check it every time
+        progress_callback = lambda num_done : None
 
     # input cleaning
 
@@ -38,28 +45,40 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
 
     # create
 
-    crosswords = [] # list of (score, crossword_grid) instances
+    crosswords = {} # dictionary of (crossword_grid -> score) instances
     try:
         print("Press Ctrl+C to stop at any time", file=sys.stderr)
+        drought_count = 0 # number of batches without any new crosswords
+                          # hacky fix to prevent infinite loop in case crossword not possible with words given
+
         while max is None or len(crosswords) < max:
             for crossword in walker.generate_crosswords(words, max=batch):
-                print(".", end="", file=sys.stderr, flush=True)
-                crosswords.append((pretty.be_judgmental(crossword), crossword))
-                if progress_callback is not None:
-                    progress_callback(len(crosswords))
+                if crossword not in crosswords: # hopefully this should prevent duplicates
+                    print(".", end="", file=sys.stderr, flush=True)
+                    crosswords[crossword] = pretty.be_judgmental(crossword)
+                    drought_count = -1 # reset
+                progress_callback(len(crosswords))
                 if len(crosswords) == max:
                     break
-            if len(crosswords) == 0: # hacky fix to prevent infinite loop in case crossword not possible with words given
-                progress_callback(-1)
+            drought_count += 1
+            if drought_count > 0:
+                 print("x", end="", file=sys.stderr, flush=True)
+
+            if drought_count == no_progress_timeout: # use == so that -1 timeout means no timeout
+                print(file=sys.stderr)
+                logging.info(f"{drought_count} batches without any new crosswords, so terminating early")
+                progress_callback(len(crosswords))
                 break
     except KeyboardInterrupt: # graceful interrupt
         print(f"\ngenerated {len(crosswords)} crosswords", file=sys.stderr)
 
     # sort results in descending order by score
 
-    crosswords = sorted(crosswords, key=lambda x: x[0], reverse=True)
+    crosswords_list = [(item[1], item[0]) for item in crosswords.items()]
+        # (score, crossword)
+    crosswords_list = sorted(crosswords_list, key=lambda x: x[0], reverse=True)
 
-    return crosswords
+    return crosswords_list
 
 # Argparse stuff
 

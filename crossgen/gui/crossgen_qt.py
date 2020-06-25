@@ -216,7 +216,7 @@ class CrossgenQt(QMainWindow):
 		max_crosswords = self.max # it shouldn't be possible for this to change while generating, but just in case
 
 		def update_progress(num_done):
-			if num_done == -1:
+			if num_done == 0:
 				self.statusBar().showMessage(f"Could not generate any crosswords with the words given.")
 				self.on_done_generating()
 				return
