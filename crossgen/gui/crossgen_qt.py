@@ -244,31 +244,39 @@ class CrossgenQt(QMainWindow):
 
 			self.finished.emit()
 
+	def update_progress(self, num_done):
+		if num_done == 0:
+			self.statusBar().showMessage(f"Could not generate any crosswords with the words given.")
+			return
+
+		self.statusBar().showMessage(f"Generated {num_done}/{self.used_max} crosswords...")
+
+	def on_interrupt_generate(self):
+		if self.gen_worker is not None:
+			self.gen_worker.terminate()
+			self.on_done_generating()
+			print(file=sys.stderr)
+			logging.info("Crossword generation interrupted with Ctrl+C!")
+			self.statusBar().showMessage(f"Crossword generation interrupted with Ctrl+C!")
+
+	def on_done_generating(self):
+		self.crosswords = self.gen_worker.crosswords
+		self.on_output_changed(self.crosswords, self.used_words)
+		self.statusBar().showMessage(f"Generated {len(self.crosswords)} crosswords!")
+		self.gen_worker = None
+		self.btn_generate.setEnabled(True)
+
 	def on_generate_pressed(self):
 		if not self.can_generate(): # avoid generating while already generating, and prompt if previous crosswords are unsaved
 			return
 
 		self.btn_generate.setEnabled(False)
-		words = self.words
-		max_crosswords = self.max
+		self.used_words = self.words # save these values in a separate variable in case they change while generating
+		self.used_max = self.max
 
-		def update_progress(num_done):
-			if num_done == 0:
-				self.statusBar().showMessage(f"Could not generate any crosswords with the words given.")
-				return
-
-			self.statusBar().showMessage(f"Generated {num_done}/{max_crosswords} crosswords...")
-
-		def on_done_generating():
-			self.crosswords = self.gen_worker.crosswords
-			self.on_output_changed(self.crosswords, words)
-			self.statusBar().showMessage(f"Generated {len(self.crosswords)} crosswords!")
-			self.gen_worker = None
-			self.btn_generate.setEnabled(True)
-
-		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(words, max_crosswords, self.batch)
-		self.gen_worker.num_done_updated.connect(update_progress)
-		self.gen_worker.finished.connect(on_done_generating)
+		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(self.used_words, self.used_max, self.batch)
+		self.gen_worker.num_done_updated.connect(self.update_progress)
+		self.gen_worker.finished.connect(self.on_done_generating)
 		self.gen_worker.start()
 
 	def on_output_changed(self, crosswords=[], words=[]):
@@ -444,6 +452,7 @@ class CrossgenQt(QMainWindow):
 				logging.info("sys.stderr restored back to original value")
 
 			self.debug_window.closed.connect(on_debug_closed)
+			self.debug_window.interrupt.connect(self.on_interrupt_generate)
 
 		if not self.debug_window.isVisible():
 			sys.stderr = self.qt_log_handler
