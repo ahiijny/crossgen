@@ -3,6 +3,8 @@ from PyQt5.QtCore import (
 	QObject,
 	QThread,
 	pyqtSignal,
+	Qt,
+	QEvent,
 )
 from PyQt5.QtWidgets import (
 	QFrame,
@@ -25,6 +27,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import (
 	QTextCursor,
+	QKeySequence,
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
@@ -60,6 +63,7 @@ class DebugWindow(QMainWindow):
 		self.layout.addWidget(self.config_pane)
 
 		self.debug_pane = QPlainTextEdit()
+		self.debug_pane.installEventFilter(self)
 		doc = self.debug_pane.document()
 		font = doc.defaultFont()
 		font.setFamily("Consolas")
@@ -77,6 +81,7 @@ class DebugWindow(QMainWindow):
 	# signals
 
 	closed = pyqtSignal()
+	interrupt = pyqtSignal() # TODO: connect this to something
 
 	# @Override
 	def closeEvent(self, event):
@@ -101,6 +106,45 @@ class DebugWindow(QMainWindow):
 		self.debug_pane.moveCursor(QTextCursor.End)
 		self.debug_pane.insertPlainText(text)
 		self.debug_pane.moveCursor(QTextCursor.End)
+
+	
+	# @Override
+	def eventFilter(self, source, event):
+		if event.type() == QEvent.KeyPress:
+			key = event.key()
+			modifiers = event.modifiers()
+			keyseq = QKeySequence(int(modifiers) + key)
+			ctrlc = QKeySequence(Qt.CTRL + Qt.Key_C)
+			if keyseq.matches(ctrlc) == QKeySequence.ExactMatch:
+				self.interrupt.emit()
+
+		return super().eventFilter(source, event) # should return False to not eat the event
+
+	# @Override
+	def keyPressEvent(self, event):
+		# https://stackoverflow.com/questions/35033116/in-pyqt-how-to-print-ctrlkey-in-qlineedit-when-pressed-ctrl-anykey
+		# https://doc.qt.io/qt-5/qwidget.html#keyPressEvent
+		# super().keyPressEvent(event)
+		return
+
+		key = event.key()
+		modifiers = event.modifiers()
+		print("modifiers: %x, key: %x" % (int(modifiers), key))
+		a = int(modifiers) + key
+		b = Qt.CTRL + Qt.Key_C
+		keyseq = QKeySequence(int(modifiers) + key)
+		ctrlc = QKeySequence(Qt.CTRL + Qt.Key_C)
+		try:
+			pass
+			# print("ctrlc: %x, keyseq: %x" % (b, a))
+			# print(f"ctrlc: {ctrlc.toString()}, keyseq: {keyseq.toString()}")
+		except Exception as e:
+			print(e)
+
+		# logging.info('event.text(): %r' % event.text())
+		# logging.info('event.key(): %d, %#x, %s' % (key, key, keyname))
+
+		
 		
 if __name__ == "__main__":
 	app = QApplication([])
