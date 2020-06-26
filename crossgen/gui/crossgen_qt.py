@@ -22,6 +22,8 @@ from PyQt5.QtWidgets import (
 	QFileDialog,
 	QSizePolicy,
 	QDialog,
+	QFormLayout,
+	QSpinBox,
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
@@ -151,13 +153,27 @@ class CrossgenQt(QMainWindow):
 
 	def _build_centre_pane(self):
 		centre_layout = QBoxLayout(QBoxLayout.TopToBottom)
-		centre_layout.setContentsMargins(0, 0, 0, 0)
+		centre_layout.setContentsMargins(0, 40, 0, 40)
 		centre_pane = QWidget()
 		centre_pane.setLayout(centre_layout)
 
 		self.btn_generate = QPushButton('Generate')
 		self.btn_generate.clicked.connect(self.on_generate_pressed)
 		centre_layout.addWidget(self.btn_generate)
+
+		options_layout = QFormLayout()
+		options_layout.setContentsMargins(0, 5, 0, 0)
+		options_pane = QWidget()
+		options_pane.setLayout(options_layout)
+
+		self.max_spinbox = QSpinBox()
+		self.max_spinbox.setMinimum(1)
+		self.max_spinbox.setMaximum(999)
+		self.max_spinbox.setValue(10)
+		self.max_spinbox.valueChanged.connect(self.set_max_crosswords)
+		options_layout.addRow("How many:", self.max_spinbox)
+
+		centre_layout.addWidget(options_pane)
 
 		return centre_pane
 
@@ -205,6 +221,9 @@ class CrossgenQt(QMainWindow):
 		else:
 			self.statusBar().showMessage("Enter some words!")
 
+	def set_max_crosswords(self, number):
+		self.max = number
+
 	class GenerateCrosswordsWorker(QThread):
 		num_done_updated = pyqtSignal(int)
 		finished = pyqtSignal()
@@ -231,7 +250,7 @@ class CrossgenQt(QMainWindow):
 
 		self.btn_generate.setEnabled(False)
 		words = self.words
-		max_crosswords = self.max # it shouldn't be possible for this to change while generating, but just in case
+		max_crosswords = self.max
 
 		def update_progress(num_done):
 			if num_done == 0:
