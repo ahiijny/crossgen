@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (
 	QMessageBox,
 	QFileDialog,
 	QSizePolicy,
+	QDialog,
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
@@ -71,9 +72,8 @@ class CrossgenQt(QMainWindow):
 		self.input_pane = self._build_input_pane()
 		self.layout.addWidget(self.input_pane)
 
-		self.btn_generate = QPushButton('Generate')
-		self.btn_generate.clicked.connect(self.on_generate_pressed)
-		self.layout.addWidget(self.btn_generate)
+		self.centre_pane = self._build_centre_pane()
+		self.layout.addWidget(self.centre_pane)
 
 		self.output_pane = self._build_output_pane()
 		self.layout.addWidget(self.output_pane)
@@ -121,6 +121,11 @@ class CrossgenQt(QMainWindow):
 		act_debug.triggered.connect(self.show_debug)
 		tools_menu.addAction(act_debug)
 
+		act_about = QAction('&About', self)
+		act_about.setStatusTip('Show information')
+		act_about.triggered.connect(self.show_about)
+		tools_menu.addAction(act_about)
+
 	def _build_input_pane(self):
 		input_layout = QBoxLayout(QBoxLayout.TopToBottom)
 		input_pane = QWidget()
@@ -143,6 +148,18 @@ class CrossgenQt(QMainWindow):
 		input_layout.addWidget(self.word_count_label)
 
 		return input_pane
+
+	def _build_centre_pane(self):
+		centre_layout = QBoxLayout(QBoxLayout.TopToBottom)
+		centre_layout.setContentsMargins(0, 0, 0, 0)
+		centre_pane = QWidget()
+		centre_pane.setLayout(centre_layout)
+
+		self.btn_generate = QPushButton('Generate')
+		self.btn_generate.clicked.connect(self.on_generate_pressed)
+		centre_layout.addWidget(self.btn_generate)
+
+		return centre_pane
 
 	def _build_output_pane(self):
 		output_pane = QWidget()
@@ -226,6 +243,7 @@ class CrossgenQt(QMainWindow):
 		def on_done_generating():
 			self.crosswords = self.gen_worker.crosswords
 			self.on_output_changed(self.crosswords, words)
+			self.statusBar().showMessage(f"Generated {len(self.crosswords)} crosswords!")
 			self.gen_worker = None
 			self.btn_generate.setEnabled(True)
 
@@ -414,3 +432,23 @@ class CrossgenQt(QMainWindow):
 			logging.info("sys.stderr now prints to the debug window")
 
 			self.debug_window.show()
+
+	def show_about(self):
+		msg = QDialog(parent=self)
+		msg.setWindowTitle("About crossgen")
+		msg.setModal(True)
+
+		about_pane = QTextEdit()
+		about_pane.setReadOnly(True)
+		about_pane.setStyleSheet("""font-size: 8pt;""")
+		about_pane.setText("""A quick, hacky crossword generation tool.
+
+The scores are pretty arbitrary, so don't worry too much about those. Their main purpose is to sort nicer looking crosswords closer to the top, for some definition of "nicer".
+
+By: ahiijny (2020)
+""")
+		layout = QVBoxLayout()
+		layout.addWidget(about_pane)
+		msg.setLayout(layout)
+
+		msg.exec_()

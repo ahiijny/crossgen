@@ -118,33 +118,7 @@ class DebugWindow(QMainWindow):
 			if keyseq.matches(ctrlc) == QKeySequence.ExactMatch:
 				self.interrupt.emit()
 
-		return super().eventFilter(source, event) # should return False to not eat the event
-
-	# @Override
-	def keyPressEvent(self, event):
-		# https://stackoverflow.com/questions/35033116/in-pyqt-how-to-print-ctrlkey-in-qlineedit-when-pressed-ctrl-anykey
-		# https://doc.qt.io/qt-5/qwidget.html#keyPressEvent
-		# super().keyPressEvent(event)
-		return
-
-		key = event.key()
-		modifiers = event.modifiers()
-		print("modifiers: %x, key: %x" % (int(modifiers), key))
-		a = int(modifiers) + key
-		b = Qt.CTRL + Qt.Key_C
-		keyseq = QKeySequence(int(modifiers) + key)
-		ctrlc = QKeySequence(Qt.CTRL + Qt.Key_C)
-		try:
-			pass
-			# print("ctrlc: %x, keyseq: %x" % (b, a))
-			# print(f"ctrlc: {ctrlc.toString()}, keyseq: {keyseq.toString()}")
-		except Exception as e:
-			print(e)
-
-		# logging.info('event.text(): %r' % event.text())
-		# logging.info('event.key(): %d, %#x, %s' % (key, key, keyname))
-
-		
+		return super().eventFilter(source, event) # should return False to not eat the event		
 		
 if __name__ == "__main__":
 	app = QApplication([])
