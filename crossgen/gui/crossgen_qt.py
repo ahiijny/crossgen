@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
 	QDialog,
 	QFormLayout,
 	QSpinBox,
+	QCheckBox,
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
@@ -52,6 +53,8 @@ class CrossgenQt(QMainWindow):
 		self.confirm_generate = False # if generated crosswords aren't saved, prompt user
 		self.max = 10
 		self.batch = 5
+		self.capitalize = True
+		self.remove_spaces = True
 		self.words = []
 		self.crosswords = []
 		self.gen_worker = None
@@ -172,8 +175,23 @@ class CrossgenQt(QMainWindow):
 		self.max_spinbox.setValue(10)
 		self.max_spinbox.valueChanged.connect(self.set_max_crosswords)
 		options_layout.addRow("How many:", self.max_spinbox)
-
 		centre_layout.addWidget(options_pane)
+
+		self.caps_checkbox = QCheckBox()
+		self.caps_checkbox.setText("Capitalize all letters")
+		self.caps_checkbox.setChecked(self.capitalize)
+		def set_caps(checked):
+			self.capitalize = checked
+		self.caps_checkbox.toggled.connect(set_caps)
+		centre_layout.addWidget(self.caps_checkbox)
+
+		self.spaces_checkbox = QCheckBox()
+		self.spaces_checkbox.setText("Remove spaces")
+		self.spaces_checkbox.setChecked(self.remove_spaces)
+		def set_spaces(checked):
+			self.remove_spaces = checked
+		self.spaces_checkbox.toggled.connect(set_spaces)
+		centre_layout.addWidget(self.spaces_checkbox)
 
 		return centre_pane
 
@@ -228,11 +246,13 @@ class CrossgenQt(QMainWindow):
 		num_done_updated = pyqtSignal(int)
 		finished = pyqtSignal()
 
-		def __init__(self, words, max, batch):
+		def __init__(self, words, max, batch, capitalize, remove_spaces):
 			super().__init__()
 			self.words = words
 			self.max = max
 			self.batch = batch
+			self.capitalize = capitalize
+			self.remove_spaces = remove_spaces
 			self.crosswords = []
 
 		def run(self):
@@ -240,7 +260,7 @@ class CrossgenQt(QMainWindow):
 				self.num_done_updated.emit(num_done)
 
 			self.crosswords = crossgen.command.create_crosswords(words=self.words, max=self.max, batch=self.batch,
-					progress_callback=progress_callback)
+					progress_callback=progress_callback, capitalize=self.capitalize, remove_spaces=self.remove_spaces)
 
 			self.finished.emit()
 
@@ -250,6 +270,20 @@ class CrossgenQt(QMainWindow):
 			return
 
 		self.statusBar().showMessage(f"Generated {num_done}/{self.used_max} crosswords...")
+
+	def on_generate_pressed(self):
+		if not self.can_generate(): # avoid generating while already generating, and prompt if previous crosswords are unsaved
+			return
+
+		self.btn_generate.setEnabled(False)
+		self.used_words = list(self.words) # save these values in a separate variable in case they change while generating
+		self.used_max = self.max
+
+		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(self.used_words, self.used_max,
+				self.batch, self.capitalize, self.remove_spaces)
+		self.gen_worker.num_done_updated.connect(self.update_progress)
+		self.gen_worker.finished.connect(self.on_done_generating)
+		self.gen_worker.start()
 
 	def on_interrupt_generate(self):
 		if self.gen_worker is not None:
@@ -265,19 +299,6 @@ class CrossgenQt(QMainWindow):
 		self.statusBar().showMessage(f"Generated {len(self.crosswords)} crosswords!")
 		self.gen_worker = None
 		self.btn_generate.setEnabled(True)
-
-	def on_generate_pressed(self):
-		if not self.can_generate(): # avoid generating while already generating, and prompt if previous crosswords are unsaved
-			return
-
-		self.btn_generate.setEnabled(False)
-		self.used_words = self.words # save these values in a separate variable in case they change while generating
-		self.used_max = self.max
-
-		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(self.used_words, self.used_max, self.batch)
-		self.gen_worker.num_done_updated.connect(self.update_progress)
-		self.gen_worker.finished.connect(self.on_done_generating)
-		self.gen_worker.start()
 
 	def on_output_changed(self, crosswords=[], words=[]):
 		if len(crosswords) > 0:

@@ -17,6 +17,8 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
 
     Returns a list of the form (score, crossword_grid).
 
+    Note: if capitalize or remove_spaces is enabled, words will be preprocessed in-place.
+
     If could not generate any crosswords, progress_callback called with -1.
     """
     # debourg
