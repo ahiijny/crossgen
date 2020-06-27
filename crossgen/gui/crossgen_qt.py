@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
 	QFormLayout,
 	QSpinBox,
 	QCheckBox,
+	QAbstractScrollArea,
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
@@ -55,11 +56,13 @@ class CrossgenQt(QMainWindow):
 		self.batch = 5
 		self.capitalize = True
 		self.remove_spaces = True
+		self.no_progress_timeout = 5 # number of batches
 		self.words = []
 		self.crosswords = []
 		self.gen_worker = None
 		self.save_worker = None
 		self.html = ""
+		self.options_window = None
 		self.debug_window = None
 		self.qt_log_handler = None
 
@@ -121,10 +124,17 @@ class CrossgenQt(QMainWindow):
 		act_exit.triggered.connect(self.close)
 		file_menu.addAction(act_exit)
 
+		act_options = QAction('Advanced &options', self)
+		act_options.setStatusTip('More options')
+		act_options.triggered.connect(self.show_advanced_options)
+		tools_menu.addAction(act_options)
+
 		act_debug = QAction('&Debug logging', self)
 		act_debug.setStatusTip('Show debug output for crossword generation')
 		act_debug.triggered.connect(self.show_debug)
 		tools_menu.addAction(act_debug)
+
+		tools_menu.addSeparator()
 
 		act_about = QAction('&About', self)
 		act_about.setStatusTip('Show information')
@@ -172,7 +182,7 @@ class CrossgenQt(QMainWindow):
 		self.max_spinbox = QSpinBox()
 		self.max_spinbox.setMinimum(1)
 		self.max_spinbox.setMaximum(999)
-		self.max_spinbox.setValue(10)
+		self.max_spinbox.setValue(self.max)
 		self.max_spinbox.valueChanged.connect(self.set_max_crosswords)
 		options_layout.addRow("How many:", self.max_spinbox)
 		centre_layout.addWidget(options_pane)
@@ -246,13 +256,14 @@ class CrossgenQt(QMainWindow):
 		num_done_updated = pyqtSignal(int)
 		finished = pyqtSignal()
 
-		def __init__(self, words, max, batch, capitalize, remove_spaces):
+		def __init__(self, words, max, batch, capitalize, remove_spaces, no_progress_timeout):
 			super().__init__()
 			self.words = words
 			self.max = max
 			self.batch = batch
 			self.capitalize = capitalize
 			self.remove_spaces = remove_spaces
+			self.no_progress_timeout = no_progress_timeout
 			self.crosswords = []
 
 		def run(self):
@@ -260,7 +271,8 @@ class CrossgenQt(QMainWindow):
 				self.num_done_updated.emit(num_done)
 
 			self.crosswords = crossgen.command.create_crosswords(words=self.words, max=self.max, batch=self.batch,
-					progress_callback=progress_callback, capitalize=self.capitalize, remove_spaces=self.remove_spaces)
+					progress_callback=progress_callback, capitalize=self.capitalize, remove_spaces=self.remove_spaces,
+					no_progress_timeout=self.no_progress_timeout)
 
 			self.finished.emit()
 
@@ -280,7 +292,7 @@ class CrossgenQt(QMainWindow):
 		self.used_max = self.max
 
 		self.gen_worker = CrossgenQt.GenerateCrosswordsWorker(self.used_words, self.used_max,
-				self.batch, self.capitalize, self.remove_spaces)
+				self.batch, self.capitalize, self.remove_spaces, self.no_progress_timeout)
 		self.gen_worker.num_done_updated.connect(self.update_progress)
 		self.gen_worker.finished.connect(self.on_done_generating)
 		self.gen_worker.start()
@@ -480,7 +492,40 @@ class CrossgenQt(QMainWindow):
 			
 			logging.info("sys.stderr now prints to the debug window")
 
-			self.debug_window.show()
+		self.debug_window.show()
+		self.debug_window.activateWindow()
+
+	def show_advanced_options(self):
+		if self.options_window is not None:
+			self.options_window.show()
+			self.options_window.activateWindow()
+			return
+
+		self.options_window = msg = QDialog(parent=self)
+		msg.setWindowTitle("Advanced options")
+		msg.setModal(False)
+
+		options_layout = QFormLayout()
+		msg.setLayout(options_layout)
+
+		batch_spinbox = QSpinBox()
+		batch_spinbox.setMinimum(1)
+		batch_spinbox.setMaximum(999)
+		batch_spinbox.setValue(self.batch)
+		def set_batch_size(num):
+			self.batch = num
+		batch_spinbox.valueChanged.connect(set_batch_size)
+		options_layout.addRow("Batch size (crosswords):", batch_spinbox)
+
+		timeout_spinbox = QSpinBox()
+		timeout_spinbox.setMinimum(-1)
+		timeout_spinbox.setMaximum(999)
+		timeout_spinbox.setValue(self.no_progress_timeout)
+		def set_no_progress_timeout(num):
+			self.no_progress_timeout = num
+		timeout_spinbox.valueChanged.connect(set_no_progress_timeout)
+		options_layout.addRow("No progress timeout (batches):", timeout_spinbox)
+		msg.show()
 
 	def show_about(self):
 		msg = QDialog(parent=self)
@@ -492,12 +537,17 @@ class CrossgenQt(QMainWindow):
 		about_pane.setStyleSheet("""font-size: 8pt;""")
 		about_pane.setText("""A quick, hacky crossword generation tool.
 
-The scores are pretty arbitrary, so don't worry too much about those. Their main purpose is to sort nicer looking crosswords closer to the top, for some definition of "nicer".
+The crosswords are generated randomly, so they may be different every time!
+
+Scores are calculated computed completely arbitrarily, with the main intent of sorting nicer looking crosswords closer to the top, for some definition of "nicer".
 
 By: ahiijny (2020)
 """)
+		about_pane.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
 		layout = QVBoxLayout()
 		layout.addWidget(about_pane)
 		msg.setLayout(layout)
 
+		size_hint = msg.minimumSizeHint()
+		msg.setMinimumSize(QSize(size_hint.width(), size_hint.height() * 1.2))
 		msg.exec_()

@@ -68,7 +68,7 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
 
             if drought_count == no_progress_timeout: # use == so that -1 timeout means no timeout
                 print(file=sys.stderr)
-                logging.info(f"{drought_count} batches without any new crosswords, so terminating early")
+                logging.info(f"{drought_count} batches without any new crosswords, so stopping early")
                 progress_callback(len(crosswords))
                 break
     except KeyboardInterrupt: # graceful interrupt

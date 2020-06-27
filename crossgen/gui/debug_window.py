@@ -43,7 +43,7 @@ class DebugWindow(QMainWindow):
 		super().__init__(parent=parent)
 		self.pane = QWidget()
 		self.setCentralWidget(self.pane)
-		self.sizeHint = lambda : QSize(600, 600)
+		self.sizeHint = lambda : QSize(400, 600)
 		self.setWindowTitle("Debug output")
 
 		self.layout = QBoxLayout(QBoxLayout.TopToBottom)
