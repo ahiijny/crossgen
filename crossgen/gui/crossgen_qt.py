@@ -78,12 +78,18 @@ class CrossgenQt(QMainWindow):
 		self.pane.setLayout(self.layout)
 
 		self.input_pane = self._build_input_pane()
+		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+		size_policy.setHorizontalStretch(5)
+		self.input_pane.setSizePolicy(size_policy)
 		self.layout.addWidget(self.input_pane)
 
 		self.centre_pane = self._build_centre_pane()
 		self.layout.addWidget(self.centre_pane)
 
 		self.output_pane = self._build_output_pane()
+		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+		size_policy.setHorizontalStretch(7)
+		self.output_pane.setSizePolicy(size_policy)
 		self.layout.addWidget(self.output_pane)
 		
 		self.setCentralWidget(self.pane)

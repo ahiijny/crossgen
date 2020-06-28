@@ -1,7 +1,7 @@
 import sys
 
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
-from .crossgen_qt import CrossgenQt
+from crossgen.gui.crossgen_qt import CrossgenQt
 
 def main():
 	app = QApplication([])
