@@ -13,12 +13,15 @@ style = """
     }
     td {
         border: 1px solid black;
-        width: 1.3em;
-        height: 1.3em;
+        width: 1.55em;
+        height: 1.55em;
         text-align: center;
     }
     td.empty {
         border: 0;
+    }
+    td.label {
+        text-align: left;
     }
     body {
         font-family: Sans-Serif;
@@ -39,7 +42,8 @@ class HtmlGridPrinter:
         self.print_title(words, date)
 
         for i, (score, crossword) in enumerate(crosswords):            
-            self.print_crossword(crossword, title_string=f"Crossword {i+1}, score:{score:.2f}")
+            self.print_crossword(crossword, title_string=f"Crossword {i+1}, score:{score:.2f}", hide_solutions=False)
+            self.print_crossword(crossword, title_string=f"Blank version", hide_solutions=True)
 
         self.print_footer()
 
@@ -68,13 +72,16 @@ class HtmlGridPrinter:
             print(f"<li>{word}", file=out)
         print(f"</ul>", file=out)
 
-    def print_crossword(self, crossword, title_string):
+    def print_crossword(self, crossword, title_string, hide_solutions=False):
         out = self.out
 
         letters = str(crossword)
         numbers_map = crossword.get_grid_numbers()
 
-        print(f"<h2>{title_string}</h2>", file=out)
+        if not hide_solutions:
+            print(f"<h2>{title_string}</h2>", file=out)
+        else:
+            print(f"<h3>{title_string}</h3>", file=out)
 
         print("<table>", file=out)
         for y, row in enumerate(letters.split("\n")):
@@ -82,10 +89,15 @@ class HtmlGridPrinter:
             for x, letter in enumerate(row):
                 label = ""
                 if (x, y) in numbers_map:
-                    label = f"<sup>{numbers_map[(x,y)]}</sup>"
+                    label = f"<sup >{numbers_map[(x,y)]}</sup>"
                 style = ""
                 if letter == " ":
+                    letter = "&ensp;"
                     style = ' class="empty"'
+                elif letter != " " and hide_solutions:
+                    letter = "&ensp;"
+                if label != "":
+                    style = ' class="label"'
                 print(f'    <td{style}>{label}{letter}</td>', file=out)
             print("  </tr>", file=out)
 
