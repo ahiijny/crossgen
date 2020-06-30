@@ -1,6 +1,9 @@
 # crossgen
 
-Uses Python 3 to generate crosswords.
+Uses Python 3 to generate crosswords. Crosswords are generated randomly, so they may be different every time!
+
+There's a score metric to sort the nicer-looking generated ones to the top (for some definition of "nice"),
+but the weightings are pretty arbitrary, so it doesn't matter too much :P
 
 Includes a GUI implemented with PyQt5, and also a command line version.
 
@@ -34,3 +37,7 @@ After installing, you should also be able to run the following scripts from your
 - For the GUI:
 
   `crossgen`
+
+## Screenshot
+
+![screenshot of the GUI with one generated crossword](/doc/screenshot.png?raw=true)
