@@ -214,11 +214,12 @@ class CrosswordTreeSearch:
     
 def walk_test():
     logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger().setLevel(logging.DEBUG)
     words = ['reimu', 'marisa', 'sanae']
     g = link.generate_link_graph(words)
     
     search_tree = CrosswordTreeSearch(words)
-    search_tree.search()
+    next(search_tree.search())
 
 if __name__ == "__main__":
     walk_test()

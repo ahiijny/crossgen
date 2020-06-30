@@ -152,13 +152,14 @@ def be_judgmental(crossword_grid):
 
 def test_html():
     g = grid.Grid()
+    words = ["REIMU", "MARISA", "SANAE"]
     g.add_word("REIMU", 0, 0, grid.EAST)
     g.add_word("MARISA", 3, 0, grid.SOUTH)
     g.add_word("SANAE", 2, 5, grid.EAST)
 
     printer = HtmlGridPrinter()
     printer.print_header()
-    printer.print_title()
+    printer.print_title(words)
     printer.print_crossword(g, "lol jk")
     printer.print_footer()
 

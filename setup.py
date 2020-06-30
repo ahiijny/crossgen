@@ -6,7 +6,7 @@ def read(fname):
 
 setup(
 	name="crossgen",
-	version="0.0.3dev",
+	version="0.0.3",
 	description="crossword generation tool",
 	long_description=read('README.md'),
 	author="ahiijny",

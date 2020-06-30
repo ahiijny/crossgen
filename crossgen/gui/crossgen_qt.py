@@ -545,7 +545,7 @@ class CrossgenQt(QMainWindow):
 
 The crosswords are generated randomly, so they may be different every time!
 
-Scores are calculated computed completely arbitrarily, with the main intent of sorting nicer looking crosswords closer to the top, for some definition of "nicer".
+Scores are calculated computed somewhat arbitrarily, with the main intent of sorting nicer looking crosswords closer to the top, for some definition of "nicer".
 
 By: ahiijny (2020)
 """)

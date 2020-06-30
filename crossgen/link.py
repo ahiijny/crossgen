@@ -63,8 +63,8 @@ def _randbrightcolor():
 
 def _blerp(): # for testing and stuff
     words = ["reimu", "marisa", "sanae"]
+    plot_link_graph(words)
     write_link_graph_to_file(words, "grid.dot")
-    # plot_link_graph(words)
 
 if __name__ == "__main__": # for debugging and stuff
     _blerp()
