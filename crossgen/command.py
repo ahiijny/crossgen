@@ -75,8 +75,8 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
                 break
     except KeyboardInterrupt: # graceful interrupt
         pass
-    except Exception as e: # prechecks failed
-        print(e)
+    except ValueError: # prechecks failed
+        pass
     
     print(f"\nGenerated {len(crosswords)} crosswords", file=sys.stderr)
 

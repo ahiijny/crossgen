@@ -12,12 +12,18 @@ def can_generate_crosswords(words):
     num_connected_components = nx.number_connected_components(link_graph)
 
     if num_connected_components > 1:
-        logging.info(f"link graph for word list has {num_connected_components} connected components; solution not possible")
+        logging.info(f"Error: Cannot generate crosswords. There are {num_connected_components} groups of words that have no letters in common:")
+
+        for i, node_set in enumerate(nx.connected_components(link_graph)):
+            group_words = [w for w in node_set if len(w) > 1]
+            group_letters = [l for l in node_set if len(l) == 1]
+            logging.info(f"Group {i} words: {group_words}")
+            logging.info(f"Group {i} letters: {group_letters}")
         return False
     
     for word in words:
         if len(word) < 2:
-            logging.info(f"word {word} is too short")
+            logging.info(f"word '{word}' is too short")
             return False
 
     return True

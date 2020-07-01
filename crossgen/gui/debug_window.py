@@ -69,7 +69,7 @@ class DebugWindow(QMainWindow):
 		font.setFamily("Consolas")
 		font.setPointSize(10)
 		doc.setDefaultFont(font)
-		self.debug_pane.setStyleSheet("background-color: black; color: lime;")
+		self.debug_pane.setStyleSheet("background-color: black; color: whitesmoke;")
 		self.debug_pane.setReadOnly(True)
 
 		self.layout.addWidget(self.debug_pane)

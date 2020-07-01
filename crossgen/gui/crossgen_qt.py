@@ -333,7 +333,6 @@ class CrossgenQt(QMainWindow):
 			self.set_dirty(True)
 		elif len(crosswords) == 0 and len(words) != 0:
 			self.output_view.setHtml("")
-			self.set_dirty(True)
 
 	def set_dirty(self, is_dirty):
 		"""Dirty = if the file has been changed since it was last saved"""
@@ -483,6 +482,9 @@ class CrossgenQt(QMainWindow):
 	def show_debug(self):
 		if self.debug_window is None:
 			self.debug_window = DebugWindow(parent=self)
+			current_width = self.frameGeometry().width()
+			current_height = self.frameGeometry().height()
+			self.debug_window.sizeHint = lambda : QSize(current_width/3, current_height)
 			self.qt_log_handler = self.QtLogHandler()
 			formatter = logging.Formatter(fmt=self.debug_window.FORMAT, datefmt=self.debug_window.DATE_FORMAT)
 			self.qt_log_handler.setFormatter(formatter)
