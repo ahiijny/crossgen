@@ -129,6 +129,7 @@ def be_judgmental(crossword_grid):
             score_more_horizontals -= 1
     score_one_is_horizontal = 0 # looks nicer if 1 is horizontal
     score_one_is_near_the_top = 0 # looks nicer if 1 is near the top
+    score_one_is_near_the_left = 0 # looks nicer if 1 is near the left
     for attrs in crossword_grid.words.values():
         true_coords = attrs["coords"]
         grid_coords = (true_coords[0] - crossword_grid.xmin, true_coords[1] - crossword_grid.ymin)
@@ -136,13 +137,15 @@ def be_judgmental(crossword_grid):
             if attrs["orientation"] == grid.EAST:
                 score_one_is_horizontal = 1
             score_one_is_near_the_top = -grid_coords[1]
+            score_one_is_near_the_left = -grid_coords[0]
             break
 
 
     # totally arbitrary score weightings
-    score = 10 * score_intersections \
-        + 30 * score_one_is_horizontal \
+    score = 15 * score_intersections \
+        + 50 * score_one_is_horizontal \
         + 15 * score_one_is_near_the_top \
+        + 5 * score_one_is_near_the_left \
         + 5 * score_more_horizontals \
         + 10 * score_too_tall \
         + 0.5 * score_too_wide \
