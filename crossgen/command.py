@@ -52,6 +52,8 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
         print("Press Ctrl+C to stop at any time", file=sys.stderr)
         drought_count = 0 # number of batches without any new crosswords
                           # hacky fix to prevent infinite loop in case crossword not possible with words given
+        if not walker.can_generate_crosswords(words):
+            raise ValueError()
 
         while max is None or len(crosswords) < max:
             for crossword in walker.generate_crosswords(words, max=batch):
@@ -73,6 +75,8 @@ def create_crosswords(words, max=100, batch=5, debug=False, progress_callback=No
                 break
     except KeyboardInterrupt: # graceful interrupt
         pass
+    except Exception as e: # prechecks failed
+        print(e)
     
     print(f"\nGenerated {len(crosswords)} crosswords", file=sys.stderr)
 

@@ -6,6 +6,22 @@ import sys
 from crossgen import link
 from crossgen import grid
 
+def can_generate_crosswords(words):
+    """Some cheap preliminary checks to see if a crossword solution is even possible"""
+    link_graph = link.generate_link_graph(words)
+    num_connected_components = nx.number_connected_components(link_graph)
+
+    if num_connected_components > 1:
+        logging.info(f"link graph for word list has {num_connected_components} connected components; solution not possible")
+        return False
+    
+    for word in words:
+        if len(word) < 2:
+            logging.info(f"word {word} is too short")
+            return False
+
+    return True
+
 def generate_crosswords(words, max=None):
     """words is a sequence of words"""
 

@@ -22,7 +22,7 @@ To actually install this package (which also automatically installs the dependen
 
 - From GitHub:
 
-  `python -m pip install git+https://github.com/ahiijny/crossgen.git`
+  `python -m pip install https://github.com/ahiijny/crossgen/archive/master.zip`
 
 - Or, if you have the repo already cloned:
 

@@ -250,10 +250,11 @@ class CrossgenQt(QMainWindow):
 			label_text += "words"
 		self.word_count_label.setText(label_text)
 
-		if word_count > 0:
-			self.statusBar().showMessage("Ready")
-		else:
-			self.statusBar().showMessage("Enter some words!")
+		if self.gen_worker is None:
+			if word_count > 0:
+				self.statusBar().showMessage("Ready")
+			else:
+				self.statusBar().showMessage("Enter some words!")
 
 	def set_max_crosswords(self, number):
 		self.max = number
@@ -302,6 +303,7 @@ class CrossgenQt(QMainWindow):
 		self.gen_worker.num_done_updated.connect(self.update_progress)
 		self.gen_worker.finished.connect(self.on_done_generating)
 		self.gen_worker.start()
+		self.statusBar().showMessage("Generating crosswords...")
 
 	def on_interrupt_generate(self):
 		if self.gen_worker is not None:
@@ -314,7 +316,10 @@ class CrossgenQt(QMainWindow):
 	def on_done_generating(self):
 		self.crosswords = self.gen_worker.crosswords
 		self.on_output_changed(self.crosswords, self.used_words)
-		self.statusBar().showMessage(f"Generated {len(self.crosswords)} crosswords!")
+		if len(self.crosswords) == 0:
+			self.statusBar().showMessage(f"Could not generate any crosswords.")
+		else:
+			self.statusBar().showMessage(f"Generated {len(self.crosswords)} crosswords!")
 		self.gen_worker = None
 		self.btn_generate.setEnabled(True)
 
@@ -325,6 +330,9 @@ class CrossgenQt(QMainWindow):
 			pretty_printer.print_crosswords(crosswords, words)
 			self.html = strbuf.getvalue()
 			self.output_view.setHtml(self.html)
+			self.set_dirty(True)
+		elif len(crosswords) == 0 and len(words) != 0:
+			self.output_view.setHtml("")
 			self.set_dirty(True)
 
 	def set_dirty(self, is_dirty):
@@ -456,6 +464,7 @@ class CrossgenQt(QMainWindow):
 
 	class QtLogHandler(logging.Handler, QObject): # multiple inheritance hack
 		logged_msg = pyqtSignal(str)
+		stream = 1
 
 		def __init__(self):
 			logging.Handler.__init__(self)
@@ -483,7 +492,6 @@ class CrossgenQt(QMainWindow):
 			logging.getLogger().addHandler(self.qt_log_handler)
 			logging.getLogger().setLevel(logging.INFO)
 			logging.info("Set up logging")
-
 			old_stderr = sys.stderr
 
 			def on_debug_closed():
@@ -494,6 +502,15 @@ class CrossgenQt(QMainWindow):
 			self.debug_window.interrupt.connect(self.on_interrupt_generate)
 
 		if not self.debug_window.isVisible():
+			# might be running in pythonw/gui_scripts/windowed mode
+			# should remove the default basicConfig StreamHandler from logging or else it'll show errors
+			# hacky hack
+			if sys.stderr is None:	
+				for handler in logging.getLogger().handlers:
+					if isinstance(handler, logging.StreamHandler) and handler.stream is None:
+						logging.getLogger().removeHandler(handler)
+						break
+
 			sys.stderr = self.qt_log_handler
 			
 			logging.info("sys.stderr now prints to the debug window")
