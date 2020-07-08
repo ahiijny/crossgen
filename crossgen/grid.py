@@ -41,7 +41,7 @@ def normal(v1):
     else:
         raise ValueError(f"Unsupported input: {v1}")
 
-def flip_orientation(orientation):
+def switch_orientation(orientation):
     if orientation == EAST:
         return SOUTH
     elif orientation == SOUTH:
@@ -102,7 +102,7 @@ class Grid: # for now, assume no duplicate words
             return False
         parent_coords = self.words[parent_word]["coords"]
         parent_orientation = self.words[parent_word]["orientation"]
-        child_orientation = flip_orientation(parent_orientation)
+        child_orientation = switch_orientation(parent_orientation)
         join_coords = add(parent_coords, scale(parent_orientation, parent_index))
         child_coords = sub(join_coords, scale(child_orientation, child_index))
         return self.can_add_word(child_word, child_coords[0], child_coords[1], child_orientation)
@@ -110,7 +110,7 @@ class Grid: # for now, assume no duplicate words
     def join_word(self, parent_word, parent_index, child_word, child_index):
         parent_coords = self.words[parent_word]["coords"]
         parent_orientation = self.words[parent_word]["orientation"]
-        child_orientation = flip_orientation(parent_orientation)
+        child_orientation = switch_orientation(parent_orientation)
         join_coords = add(parent_coords, scale(parent_orientation, parent_index))
         child_coords = sub(join_coords, scale(child_orientation, child_index))
         self.add_word(child_word, child_coords[0], child_coords[1], child_orientation)
@@ -122,11 +122,43 @@ class Grid: # for now, assume no duplicate words
         - cannot touch any cells on either side unless crossing a path
         - cell before beginning must be empty
         - cell past end must be empty
+        - should not subsume any existing words;
+          e.g. if there is "AAA", adding "AAAA" on top of that should not be allowed
         """
 
         pos = (x, y)
         normals = normal(direction)
+
+        # make sure word does not overwrite a shorter word in the same direction
+        # no need to check for a shorter word overwriting a longer word because the other
+        # checks should catch that
         
+        for other_word, other_data in self.words.items(): # TODO: is there a nicer way of checking for this?
+            other_coords = other_data['coords']
+            other_orientation = other_data['orientation']
+            if other_word != word and other_orientation == direction:
+                # check if they overlap
+        
+                start = pos
+                end = add(pos, scale(direction, len(word)))
+                start2 = other_coords
+                end2 = add(other_coords, scale(direction, len(other_word)))
+
+                # either s <= s2 < e:
+                #     s ----- e
+                #        s2 --- e2
+                #
+                # or s2 <= s < e2:
+                #        s ----- e
+                #     s2 --- e2
+
+                if direction == EAST and start[1] == start2[1]: # same row
+                    if start[0] <= start2[0] and start2[0] < end[0] or start2[0] <= start[0] and start[0] < end2[0]:
+                        return False
+                elif direction == SOUTH and start[0] == start2[0]: # same column
+                    if start[1] <= start2[1] and start2[1] < end[1] or start2[1] <= start[1] and start[1] < end2[1]:
+                        return False
+   
         for i, ch in enumerate(word):
             # cell before beginning must be empty
             if i == 0:
