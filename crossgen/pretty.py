@@ -56,6 +56,7 @@ class HtmlGridPrinter:
         print("<style>", file=out)
         print(self.style, file=out)
         print("</style>", file=out)
+        print('<meta charset="UTF-8">', file=out)
         print("</head>", file=out)
         print("<body>", file=out)
 

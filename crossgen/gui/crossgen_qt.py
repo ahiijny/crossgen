@@ -3,6 +3,9 @@ from PyQt5.QtCore import (
 	QObject,
 	QThread,
 	pyqtSignal,
+	QBuffer,
+	QIODevice,
+	QUrl,
 )
 from PyQt5.QtWidgets import (
 	QFrame,
@@ -27,7 +30,15 @@ from PyQt5.QtWidgets import (
 	QCheckBox,
 	QAbstractScrollArea,
 )
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtWebEngineWidgets import (
+	QWebEngineView,
+)
+
+from PyQt5.QtWebEngineCore import (
+	QWebEngineUrlSchemeHandler,
+	QWebEngineUrlScheme,
+	QWebEngineUrlRequestJob,
+)
 
 from io import StringIO
 import sys
@@ -37,6 +48,35 @@ import crossgen.command
 import crossgen.grid
 import crossgen.pretty
 from crossgen.gui.debug_window import DebugWindow
+
+# hacky workaround to allow QWebEngineView load html that's
+# larger than 2 MB https://stackoverflow.com/questions/48926971/qwebengineview-loading-of-2mb-content
+class OutputLoader(QWebEngineUrlSchemeHandler):
+	def set_html(self, html):
+		self.html = html
+
+	# @Override
+	def requestStarted(self, request):
+		url = request.requestUrl()
+		path = url.path()
+
+		if path != "html.html":
+			request.fail(QWebEngineUrlRequestJob.UrlNotFound)
+			return
+
+		buffer = QBuffer(parent=self) # need to set parent to avoid buffer lifetime issues
+			# see also: https://github.com/qutebrowser/qutebrowser/blob/master/qutebrowser/browser/webengine/webenginequtescheme.py
+			# https://riverbankcomputing.com/pipermail/pyqt/2016-September/038076.html
+		buffer.open(QIODevice.WriteOnly)
+		buffer.write(self.html.encode("utf8"))
+		buffer.close()
+		request.destroyed.connect(buffer.deleteLater)
+
+		request.reply("text/html".encode("utf8"), buffer)
+
+output_scheme = QWebEngineUrlScheme("output".encode("utf8"))
+output_scheme.setSyntax(QWebEngineUrlScheme.Syntax.Path)
+QWebEngineUrlScheme.registerScheme(output_scheme)
 
 class CrossgenQt(QMainWindow):
 	def __init__(self, app):
@@ -61,6 +101,7 @@ class CrossgenQt(QMainWindow):
 		self.crosswords = []
 		self.gen_worker = None
 		self.save_worker = None
+		self.output_loader = OutputLoader()
 		self.html = ""
 		self.options_window = None
 		self.debug_window = None
@@ -95,6 +136,11 @@ class CrossgenQt(QMainWindow):
 		self.setCentralWidget(self.pane)
 
 		# Post-setup
+
+		self.output_view.page().profile().installUrlSchemeHandler("output".encode("utf8"), self.output_loader)
+		self.output_view.loadStarted.connect(self.on_output_load_started)
+		self.output_view.loadProgress.connect(self.on_output_load_progress)
+		self.output_view.loadFinished.connect(self.on_output_load_finished)
 
 		self._refresh_window_title()
 		self.on_input_changed() # populate status bar with initial status
@@ -225,7 +271,7 @@ class CrossgenQt(QMainWindow):
 		self.output_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 		#self.output_view.setReadOnly(True)
 		web_frame = QFrame()
-		web_frame.setStyleSheet("""border:1px solid #B9B9B9""") # hack to back output pane have some border colour as input pane
+		web_frame.setStyleSheet("""border:1px solid #B9B9B9""") # hack to make output pane have same border colour as input pane
 		web_frame_layout = QVBoxLayout()
 		web_frame_layout.setSpacing(0)
 		web_frame_layout.setContentsMargins(0, 0, 0, 0)
@@ -324,15 +370,35 @@ class CrossgenQt(QMainWindow):
 		self.btn_generate.setEnabled(True)
 
 	def on_output_changed(self, crosswords=[], words=[]):
+		logging.info(f"Output changed: num_crosswords={len(crosswords)}, words={words}")
 		if len(crosswords) > 0:
 			strbuf = StringIO()
 			pretty_printer = crossgen.pretty.HtmlGridPrinter(outstream=strbuf)
 			pretty_printer.print_crosswords(crosswords, words)
 			self.html = strbuf.getvalue()
-			self.output_view.setHtml(self.html)
+			logging.info(f"Length of output html = {len(self.html)} bytes")
+			# self.output_view.setHtml(self.html)
+			## ^ this old solution fails for file sizes > 2 MB https://doc.qt.io/qt-5/qwebengineview.html#setHtml
+			self.output_loader.set_html(self.html)
+			self.output_view.load(QUrl("output:html.html"))
 			self.set_dirty(True)
 		elif len(crosswords) == 0 and len(words) != 0:
 			self.output_view.setHtml("")
+
+	def on_output_load_started(self):
+		logging.debug("Output display load started")
+		self.statusBar().showMessage(f"Loading output...")
+
+	def on_output_load_progress(self, progress):
+		logging.debug(f"Output display load progress: {progress}%")
+		self.statusBar().showMessage(f"Loading output {progress}%...")
+
+	def on_output_load_finished(self, is_success):
+		logging.debug(f"Output display load finished: result={is_success}")
+		if is_success:
+			self.statusBar().showMessage(f"Generated {len(self.crosswords)} crosswords!")
+		else:
+			self.statusBar().showMessage(f"Error: Could not load output.")
 
 	def set_dirty(self, is_dirty):
 		"""Dirty = if the file has been changed since it was last saved"""
